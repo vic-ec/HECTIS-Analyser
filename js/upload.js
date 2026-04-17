@@ -103,12 +103,28 @@ const Upload = (() => {
       const ageRaw  = row['Age'] ? String(row['Age']).trim() : null;
       const ageYrs  = Utils.parseAge(ageRaw);
 
+      // Sanitise trauma — reject Date objects or timestamp strings (data entry errors)
+      const rawTrauma = row['Trauma'];
+      const traumaVal = (() => {
+        if (!rawTrauma) return null;
+        if (rawTrauma instanceof Date) return null;
+        const s = String(rawTrauma).trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return null;
+        if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)) return null;
+        if (s === '' || s === '-' || s === 'None') return null;
+        return s;
+      })();
+
+      // Sanitise triage — only accept known values
+      const rawTriage = row['Triage'] ? String(row['Triage']).trim() : null;
+      const triageVal = ['Red','Orange','Yellow','Green'].includes(rawTriage) ? rawTriage : null;
+
       transformed.push({
         age_raw:                ageRaw,
         age_years:              ageYrs,
         sex:                    row['Sex'] ? String(row['Sex']).trim() : null,
-        triage_category:        row['Triage'] ? String(row['Triage']).trim() : null,
-        trauma:                 row['Trauma'] ? String(row['Trauma']).trim() : null,
+        triage_category:        triageVal,
+        trauma:                 traumaVal,
         arrival_time:           arrivalTime.toISOString(),
         triage_time:            triageTime ? triageTime.toISOString() : null,
         consultation_time:      consultTime ? consultTime.toISOString() : null,
