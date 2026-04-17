@@ -23,9 +23,7 @@ const DB = (() => {
         { headers }
       );
       return res.ok;
-    } catch {
-      return false;
-    }
+    } catch { return false; }
   }
 
   // ── Get Total Record Count ───────────────────────────────
@@ -42,15 +40,13 @@ const DB = (() => {
         return total === '*' ? 0 : parseInt(total);
       }
       return 0;
-    } catch {
-      return 0;
-    }
+    } catch { return 0; }
   }
 
   // ── Fetch All Records (paginated) ────────────────────────
   async function fetchAll(filters = {}, onProgress = null) {
     const PAGE_SIZE = 1000;
-    let all = [];
+    let all  = [];
     let from = 0;
     let total = null;
 
@@ -81,7 +77,6 @@ const DB = (() => {
       }
 
       if (onProgress && total) onProgress(all.length, total);
-
       if (data.length < PAGE_SIZE) break;
       from += PAGE_SIZE;
     }
@@ -89,33 +84,40 @@ const DB = (() => {
     return all;
   }
 
-  // ── Insert Rows (upsert with dedup) ──────────────────────
+  // ── Insert Rows (ON CONFLICT DO NOTHING via upsert) ──────
+  // Uses the correct PostgREST upsert syntax to silently skip
+  // duplicates on our (arrival_time, triage_time, consultation_time) index.
   async function insertRows(rows) {
     if (rows.length === 0) return { inserted: 0, skipped: 0, errors: [] };
 
-    const CHUNK = 200;
+    const CHUNK = 100;
     let inserted = 0;
-    let skipped = 0;
+    let skipped  = 0;
     const errors = [];
 
     for (let i = 0; i < rows.length; i += CHUNK) {
       const chunk = rows.slice(i, i + CHUNK);
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/${TABLE}`,
-          {
-            method: 'POST',
-            headers: {
-              ...headers,
-              'Prefer': 'resolution=ignore-duplicates,return=representation'
-            },
-            body: JSON.stringify(chunk)
-          }
-        );
+        // PostgREST upsert: POST with ?on_conflict= query param
+        // This maps to INSERT ... ON CONFLICT DO NOTHING
+        const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=arrival_time,triage_time,consultation_time`;
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Prefer': 'resolution=ignore-duplicates,return=representation'
+          },
+          body: JSON.stringify(chunk)
+        });
 
         if (!res.ok) {
-          const err = await res.json();
-          errors.push(`Chunk ${Math.floor(i/CHUNK)+1}: ${err.message || res.status}`);
+          let msg = `HTTP ${res.status}`;
+          try {
+            const err = await res.json();
+            msg = err.message || err.details || msg;
+          } catch {}
+          errors.push(`Chunk ${Math.floor(i / CHUNK) + 1}: ${msg}`);
           continue;
         }
 
@@ -124,7 +126,7 @@ const DB = (() => {
         skipped  += chunk.length - result.length;
 
       } catch (e) {
-        errors.push(`Chunk ${Math.floor(i/CHUNK)+1}: ${e.message}`);
+        errors.push(`Chunk ${Math.floor(i / CHUNK) + 1}: ${e.message}`);
       }
     }
 
@@ -139,7 +141,6 @@ const DB = (() => {
         { headers: { ...headers, 'Prefer': 'count=exact', 'Range': '0-999' } }
       );
       const data = await res.json();
-      // Deduplicate
       const seen = new Set();
       return data.filter(r => {
         const k = `${r.upload_year}-${r.upload_month}`;
@@ -147,36 +148,18 @@ const DB = (() => {
         seen.add(k);
         return true;
       });
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   }
 
   // ── Build Filter Query String ────────────────────────────
   function buildFilterString(filters) {
     let s = '';
-    if (filters.year_from && filters.year_to) {
-      // Filter by date range using upload_year/upload_month
-    }
-    if (filters.disposal) {
-      s += `&disposal=eq.${encodeURIComponent(filters.disposal)}`;
-    }
-    if (filters.triage_category) {
-      s += `&triage_category=eq.${encodeURIComponent(filters.triage_category)}`;
-    }
-    if (filters.upload_year) {
-      s += `&upload_year=eq.${filters.upload_year}`;
-    }
-    if (filters.upload_month) {
-      s += `&upload_month=eq.${filters.upload_month}`;
-    }
-    // Date range filter
-    if (filters.date_from) {
-      s += `&arrival_time=gte.${filters.date_from}`;
-    }
-    if (filters.date_to) {
-      s += `&arrival_time=lte.${filters.date_to}`;
-    }
+    if (filters.disposal)        s += `&disposal=eq.${encodeURIComponent(filters.disposal)}`;
+    if (filters.triage_category) s += `&triage_category=eq.${encodeURIComponent(filters.triage_category)}`;
+    if (filters.upload_year)     s += `&upload_year=eq.${filters.upload_year}`;
+    if (filters.upload_month)    s += `&upload_month=eq.${filters.upload_month}`;
+    if (filters.date_from)       s += `&arrival_time=gte.${filters.date_from}`;
+    if (filters.date_to)         s += `&arrival_time=lte.${filters.date_to}`;
     return s;
   }
 
@@ -188,31 +171,12 @@ const DB = (() => {
         { method: 'DELETE', headers }
       );
       return res.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  // ── Get summary stats (server-side) ─────────────────────
-  async function getSummaryStats() {
-    try {
-      // Get count and min/max dates
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/${TABLE}?select=arrival_time,disposal_to_exit_min,access_block_4hr`,
-        { headers: { ...headers, 'Prefer': 'count=exact', 'Range': '0-0' } }
-      );
-      const count = res.headers.get('content-range');
-      return {
-        total: count ? parseInt(count.split('/')[1]) : 0
-      };
-    } catch {
-      return { total: 0 };
-    }
+    } catch { return false; }
   }
 
   return {
     ping, getCount, fetchAll, insertRows,
-    getAvailableMonths, deleteBySourceFile, getSummaryStats
+    getAvailableMonths, deleteBySourceFile
   };
 
 })();

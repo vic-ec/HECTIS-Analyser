@@ -5,7 +5,6 @@
 const Utils = (() => {
 
   // ── Age Parsing ──────────────────────────────────────────
-  // Converts "3Y", "9M", "2M", "45" to decimal years
   function parseAge(raw) {
     if (!raw) return null;
     const s = String(raw).trim().toUpperCase();
@@ -17,28 +16,10 @@ const Utils = (() => {
     return isNaN(num) ? null : num;
   }
 
-  // ── Excel Serial Date to JS Date ─────────────────────────
-  // SheetJS can return dates as numbers (Excel serial) or JS Date objects
-  function excelDateToJS(val) {
-    if (!val) return null;
-    if (val instanceof Date) return val;
-    if (typeof val === 'number') {
-      // Excel serial: days since 1899-12-30
-      const ms = (val - 25569) * 86400 * 1000;
-      return new Date(ms);
-    }
-    if (typeof val === 'string') {
-      const d = new Date(val);
-      return isNaN(d.getTime()) ? null : d;
-    }
-    return null;
-  }
-
   // ── Minutes Between Two Dates ────────────────────────────
   function minutesBetween(a, b) {
     if (!a || !b) return null;
-    const diff = (b.getTime() - a.getTime()) / 60000;
-    return diff;
+    return (b.getTime() - a.getTime()) / 60000;
   }
 
   // ── Format Minutes to Human-Readable ────────────────────
@@ -63,23 +44,19 @@ const Utils = (() => {
     return parseFloat((min / 60).toFixed(1));
   }
 
-  // ── Percentile Calculation ───────────────────────────────
+  // ── Percentile ───────────────────────────────────────────
   function percentile(arr, p) {
     const sorted = [...arr].filter(v => v !== null && v !== undefined && !isNaN(v) && v >= 0).sort((a, b) => a - b);
-    if (sorted.length === 0) return null;
+    if (!sorted.length) return null;
     const idx = (p / 100) * (sorted.length - 1);
-    const lo = Math.floor(idx);
-    const hi = Math.ceil(idx);
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
     if (lo === hi) return sorted[lo];
     return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
   }
 
-  // ── Median ───────────────────────────────────────────────
-  function median(arr) {
-    return percentile(arr, 50);
-  }
+  function median(arr) { return percentile(arr, 50); }
 
-  // ── Format Date for Display ──────────────────────────────
+  // ── Format Date ──────────────────────────────────────────
   function formatDate(d) {
     if (!d) return '—';
     const dt = d instanceof Date ? d : new Date(d);
@@ -88,6 +65,12 @@ const Utils = (() => {
       day: '2-digit', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit', hour12: false
     });
+  }
+
+  // ── Disposal classification ──────────────────────────────
+  // Returns whether a disposal is a referral to an inpatient discipline
+  function isReferral(disposal) {
+    return disposal && disposal.toLowerCase().startsWith('referred to');
   }
 
   // ── Discipline Short Labels ──────────────────────────────
@@ -99,14 +82,25 @@ const Utils = (() => {
     'Referred to Orthopaedics': 'Ortho',
     'Referred to Gynae':        'Gynae',
     'Referred to Urology':      'Urology',
+    'Discharged':               'Discharged',
+    'Discharged to OPD':        'Disch. OPD',
+    'Discharged to Forensics':  'Disch. Forensics',
+    'Absconded':                'Absconded',
+    'Deferral':                 'Deferral',
+    'Transfer other':           'Transfer',
+    'RHT':                      'RHT',
+    'Deceased (Natural)':       'Deceased',
+    'Deceased (Unnatural)':     'Deceased (Unnat.)',
+    'DOA (Natural)':            'DOA',
   };
 
   function shortDiscipline(d) {
-    return DISCIPLINE_SHORT[d] || d;
+    return DISCIPLINE_SHORT[d] || d || '—';
   }
 
-  // ── Discipline Colours ───────────────────────────────────
+  // ── Disposal Colours ─────────────────────────────────────
   const DISCIPLINE_COLORS = {
+    // Referrals
     'Referred to Medicine':     '#f85149',
     'Referred to Surgery':      '#58a6ff',
     'Referred to Paeds':        '#3fb950',
@@ -114,6 +108,17 @@ const Utils = (() => {
     'Referred to Orthopaedics': '#e07b39',
     'Referred to Gynae':        '#f778ba',
     'Referred to Urology':      '#d29922',
+    // Other disposals
+    'Discharged':               '#7d8590',
+    'Discharged to OPD':        '#6e7681',
+    'Discharged to Forensics':  '#6e7681',
+    'Absconded':                '#484f58',
+    'Deferral':                 '#484f58',
+    'Transfer other':           '#8b949e',
+    'RHT':                      '#8b949e',
+    'Deceased (Natural)':       '#30363d',
+    'Deceased (Unnatural)':     '#30363d',
+    'DOA (Natural)':            '#30363d',
   };
 
   function disciplineColor(d) {
@@ -122,11 +127,11 @@ const Utils = (() => {
 
   // ── Triage Badge Class ───────────────────────────────────
   function triageBadgeClass(t) {
-    const map = { 'Red': 'badge-red', 'Orange': 'badge-orange', 'Yellow': 'badge-yellow', 'Green': 'badge-green' };
+    const map = { Red: 'badge-red', Orange: 'badge-orange', Yellow: 'badge-yellow', Green: 'badge-green' };
     return map[t] || 'badge-yellow';
   }
 
-  // ── Group By Key ─────────────────────────────────────────
+  // ── Group By ─────────────────────────────────────────────
   function groupBy(arr, key) {
     return arr.reduce((acc, row) => {
       const k = row[key] ?? 'Unknown';
@@ -136,12 +141,10 @@ const Utils = (() => {
     }, {});
   }
 
-  // ── Get Unique Values ────────────────────────────────────
   function unique(arr) {
     return [...new Set(arr.filter(Boolean))].sort();
   }
 
-  // ── Day of Week Name ─────────────────────────────────────
   const DOW = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   function dowName(d) {
     if (!d) return null;
@@ -149,41 +152,29 @@ const Utils = (() => {
     return DOW[dt.getDay()];
   }
 
-  // ── Round to 1 decimal ───────────────────────────────────
-  function r1(n) {
-    if (n === null || n === undefined || isNaN(n)) return null;
-    return Math.round(n * 10) / 10;
-  }
+  function r1(n) { return (n === null || n === undefined || isNaN(n)) ? null : Math.round(n * 10) / 10; }
+  function r0(n) { return (n === null || n === undefined || isNaN(n)) ? null : Math.round(n); }
 
-  // ── Round to nearest integer ─────────────────────────────
-  function r0(n) {
-    if (n === null || n === undefined || isNaN(n)) return null;
-    return Math.round(n);
-  }
-
-  // ── Debounce ─────────────────────────────────────────────
   function debounce(fn, ms) {
     let t;
     return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
   }
 
-  // ── Show Toast Notification ──────────────────────────────
   function toast(msg, type = 'info', duration = 3500) {
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
     el.textContent = msg;
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('visible'));
-    setTimeout(() => {
-      el.classList.remove('visible');
-      setTimeout(() => el.remove(), 300);
-    }, duration);
+    setTimeout(() => { el.classList.remove('visible'); setTimeout(() => el.remove(), 300); }, duration);
   }
 
   return {
-    parseAge, excelDateToJS, minutesBetween, formatMinutes, toHours,
-    percentile, median, formatDate, shortDiscipline, disciplineColor,
-    triageBadgeClass, groupBy, unique, dowName, r0, r1, debounce, toast,
+    parseAge, minutesBetween, formatMinutes, toHours,
+    percentile, median, formatDate,
+    isReferral, shortDiscipline, disciplineColor,
+    triageBadgeClass, groupBy, unique, dowName,
+    r0, r1, debounce, toast,
     DOW, DISCIPLINE_SHORT, DISCIPLINE_COLORS
   };
 })();
