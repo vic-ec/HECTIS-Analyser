@@ -4,38 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HECTIS Analyser — VHW Emergency Centre</title>
-  <meta name="description" content="Hospital & Emergency Centre Tracking Information System — Victoria Hospital Wynberg">
   <link rel="stylesheet" href="css/styles.css">
-
-  <!-- Toast styles (inline for simplicity) -->
   <style>
-    .toast {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      padding: 0.65rem 1.1rem;
-      border-radius: var(--radius);
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      color: white;
-      z-index: 9999;
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 0.25s ease, transform 0.25s ease;
-      max-width: 360px;
-      border: 1px solid transparent;
-    }
-    .toast.visible { opacity: 1; transform: translateY(0); }
-    .toast-success { background: #1a2e1c; border-color: rgba(63,185,80,0.4); color: #3fb950; }
-    .toast-error   { background: #2e1a1a; border-color: rgba(248,81,73,0.4); color: #f85149; }
-    .toast-warn    { background: #2b2314; border-color: rgba(210,153,34,0.4); color: #d29922; }
-    .toast-info    { background: #161e2e; border-color: rgba(88,166,255,0.3); color: #58a6ff; }
+    .toast { position:fixed;bottom:1.5rem;right:1.5rem;padding:0.65rem 1.1rem;border-radius:var(--radius);font-family:var(--font-mono);font-size:0.78rem;z-index:9999;opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;max-width:360px;border:1px solid transparent; }
+    .toast.visible{opacity:1;transform:translateY(0);}
+    .toast-success{background:#1a2e1c;border-color:rgba(63,185,80,.4);color:#3fb950;}
+    .toast-error{background:#2e1a1a;border-color:rgba(248,81,73,.4);color:#f85149;}
+    .toast-warn{background:#2b2314;border-color:rgba(210,153,34,.4);color:#d29922;}
+    .toast-info{background:#161e2e;border-color:rgba(88,166,255,.3);color:#58a6ff;}
+    .triage-kpi-card{border-top-color:var(--text-dim);}
+    .triage-kpi-card .kpi-sub{font-size:.68rem;color:var(--text-muted);margin-top:.2rem;font-family:var(--font-mono);}
+    .trauma-split-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;}
+    .trauma-split-label{font-size:.7rem;font-family:var(--font-mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem;}
+    .trauma-split-row{display:flex;justify-content:space-between;align-items:center;gap:1rem;}
+    .trauma-half{text-align:center;flex:1;}
+    .trauma-half-label{font-size:.65rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem;}
+    .trauma-half-label.t{color:var(--red);} .trauma-half-label.nt{color:var(--blue);}
+    .trauma-val,.nontrauma-val{font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--text);}
+    .trauma-split-divider{width:1px;height:40px;background:var(--border);}
+    .help-section{margin-bottom:1.5rem;}
+    .help-section h3{font-family:var(--font-display);font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:1px solid var(--border);}
+    .help-section p,.help-section li{font-size:.82rem;color:var(--text-muted);line-height:1.7;}
+    .help-section ul{padding-left:1.25rem;}
+    .help-section li{margin-bottom:.3rem;}
+    .help-section code{font-family:var(--font-mono);font-size:.75rem;background:var(--surface-2);border:1px solid var(--border);border-radius:3px;padding:.1rem .35rem;color:var(--accent);}
+    .help-tag{display:inline-block;padding:.15rem .5rem;background:var(--accent-soft);border:1px solid var(--accent-glow);border-radius:99px;font-size:.7rem;font-family:var(--font-mono);color:var(--accent);margin-right:.3rem;margin-bottom:.3rem;}
   </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- ── Header ─────────────────────────────────────────── -->
   <header id="header">
     <div class="header-brand">
       <div class="header-logo">EC</div>
@@ -45,299 +43,245 @@
       </div>
     </div>
     <div class="header-meta">
-      <div id="db-status">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="status-text">Connecting…</span>
-      </div>
+      <div id="db-status"><div class="status-dot" id="status-dot"></div><span id="status-text">Connecting…</span></div>
       <div id="record-count">—</div>
     </div>
   </header>
 
-  <!-- ── Navigation ─────────────────────────────────────── -->
   <nav id="nav">
-    <button class="nav-tab active" data-tab="overview">
-      <span class="tab-icon">◈</span> Overview
-    </button>
-    <button class="nav-tab" data-tab="access-block">
-      <span class="tab-icon">⊘</span> Access Block
-    </button>
-    <button class="nav-tab" data-tab="time-patterns">
-      <span class="tab-icon">◷</span> Time Patterns
-    </button>
-    <button class="nav-tab" data-tab="data-table">
-      <span class="tab-icon">≡</span> Data Table
-    </button>
-    <button class="nav-tab" data-tab="upload">
-      <span class="tab-icon">↑</span> Upload Data
-    </button>
+    <button class="nav-tab active" data-tab="overview"><span class="tab-icon">◈</span> Overview</button>
+    <button class="nav-tab" data-tab="access-block"><span class="tab-icon">⊘</span> Access Block</button>
+    <button class="nav-tab" data-tab="time-patterns"><span class="tab-icon">◷</span> Time Patterns</button>
+    <button class="nav-tab" data-tab="triage-compliance"><span class="tab-icon">✦</span> Triage Compliance</button>
+    <button class="nav-tab" data-tab="trauma"><span class="tab-icon">⚕</span> Trauma</button>
+    <button class="nav-tab" data-tab="data-table"><span class="tab-icon">≡</span> Data Table</button>
+    <button class="nav-tab" data-tab="upload"><span class="tab-icon">↑</span> Upload</button>
+    <button class="nav-tab" data-tab="help"><span class="tab-icon">?</span> Help</button>
   </nav>
 
-  <!-- ── Main Content ───────────────────────────────────── -->
   <main id="main">
 
-    <!-- ── Global Filter Bar ──────────────────────────────── -->
     <div id="filter-bar">
+      <div class="filter-group"><label class="filter-label">From</label><input type="date" id="filter-date-from" class="filter-input"></div>
+      <div class="filter-group"><label class="filter-label">To</label><input type="date" id="filter-date-to" class="filter-input"></div>
       <div class="filter-group">
-        <label class="filter-label">From</label>
-        <input type="date" id="filter-date-from" class="filter-input">
+        <label class="filter-label">Disposals</label>
+        <div class="multiselect-wrap" id="filter-disposal-wrap">
+          <button class="multiselect-trigger filter-select" id="filter-disposal" data-placeholder="All Disposals">All Disposals</button>
+          <div class="multiselect-list"></div>
+        </div>
       </div>
-      <div class="filter-group">
-        <label class="filter-label">To</label>
-        <input type="date" id="filter-date-to" class="filter-input">
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Discipline</label>
-        <select id="filter-disposal" class="filter-select">
-          <option value="">All Disciplines</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Triage</label>
-        <select id="filter-triage" class="filter-select">
-          <option value="">All Triage</option>
-        </select>
-      </div>
+      <div class="filter-group"><label class="filter-label">Triage</label><select id="filter-triage" class="filter-select"><option value="">All Triage</option></select></div>
       <div class="filter-group">
         <label class="filter-label">Trauma</label>
-        <select id="filter-trauma" class="filter-select">
-          <option value="">All Trauma</option>
-        </select>
+        <div class="multiselect-wrap" id="filter-trauma-wrap">
+          <button class="multiselect-trigger filter-select" id="filter-trauma" data-placeholder="All Trauma">All Trauma</button>
+          <div class="multiselect-list"></div>
+        </div>
       </div>
       <div class="filter-actions">
         <button class="btn btn-ghost" id="btn-reset-filters">Reset</button>
+        <button class="btn btn-secondary" id="btn-compare-toggle">⇄ Compare</button>
+        <button class="btn btn-secondary" id="btn-generate-report">🖨 Report</button>
       </div>
     </div>
+    <!-- Comparison period B panel -->
+    <div id="compare-period-panel" style="display:none;flex-wrap:wrap;gap:1rem;align-items:center;background:var(--surface-2);border:1px solid var(--accent-glow);border-radius:var(--radius-lg);padding:0.75rem 1.5rem;margin-bottom:1rem">
+      <span style="font-size:0.72rem;font-family:var(--font-mono);color:var(--accent);letter-spacing:0.06em;text-transform:uppercase">Period B</span>
+      <div class="filter-group"><label class="filter-label">From</label><input type="date" id="filter-date-from-b" class="filter-input"></div>
+      <div class="filter-group"><label class="filter-label">To</label><input type="date" id="filter-date-to-b" class="filter-input"></div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">KPIs and trend chart will show Period A vs Period B</div>
+    </div>
+    <div style="display:none;gap:1rem;margin-bottom:0.5rem;font-size:0.72rem;font-family:var(--font-mono);color:var(--text-muted)">
+      <span id="compare-label-a"></span>
+      <span id="compare-label-b"></span>
+    </div>
 
-    <!-- ══════════════════════════════════════════════════════
-         TAB: OVERVIEW
-    ══════════════════════════════════════════════════════ -->
+    <!-- OVERVIEW -->
     <div class="tab-panel active" id="tab-overview">
-      <div class="section-header">
-        <div class="section-title">Overview</div>
-        <div class="section-desc">Summary across all referrals in the selected date range</div>
-      </div>
-
-      <!-- KPI Row 1: Top-level -->
+      <div class="section-header"><div class="section-title">Overview</div><div class="section-desc">Summary across all referrals in the selected date range</div></div>
       <div class="kpi-grid">
-        <div class="kpi-card" id="kpi-total">
-          <div class="kpi-label">Total Referrals</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit"></div>
-        </div>
-        <div class="kpi-card" id="kpi-los">
-          <div class="kpi-label">Median Total LOS</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit"></div>
-        </div>
-        <div class="kpi-card" id="kpi-block-rate">
-          <div class="kpi-label">Overall Access Block Rate</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit"></div>
-        </div>
-        <div class="kpi-card" id="kpi-worst">
-          <div class="kpi-label">Worst Discipline</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit"></div>
-        </div>
+        <div class="kpi-card" id="kpi-total"><div class="kpi-label">Total Referrals</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
+        <div class="kpi-card" id="kpi-los"><div class="kpi-label">Median Total LOS</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
+        <div class="kpi-card" id="kpi-block-rate"><div class="kpi-label">Access Block Rate</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
+        <div class="kpi-card" id="kpi-worst"><div class="kpi-label">Highest Bed Pressure</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
       </div>
-
-      <!-- KPI Row 2: Time segments -->
       <div class="kpi-grid" style="margin-bottom:1.5rem">
-        <div class="kpi-card" id="kpi-seg-att">
-          <div class="kpi-label">Arrival → Triage</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit">median</div>
-        </div>
-        <div class="kpi-card" id="kpi-seg-ttd">
-          <div class="kpi-label">Triage → Doctor</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit">median</div>
-        </div>
-        <div class="kpi-card" id="kpi-seg-dtd">
-          <div class="kpi-label">Doctor → Disposal</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit">median</div>
-        </div>
-        <div class="kpi-card" id="kpi-seg-dte">
-          <div class="kpi-label">Disposal → Exit</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-unit">median</div>
-        </div>
+        <div class="kpi-card" id="kpi-seg-att"><div class="kpi-label">Arrival → Triage</div><div class="kpi-value">—</div><div class="kpi-unit">median</div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
+        <div class="kpi-card" id="kpi-seg-ttd"><div class="kpi-label">Triage → Doctor</div><div class="kpi-value">—</div><div class="kpi-unit">median</div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
+        <div class="kpi-card" id="kpi-seg-dtd"><div class="kpi-label">Doctor → Disposal</div><div class="kpi-value">—</div><div class="kpi-unit">median</div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
+        <div class="kpi-card" id="kpi-seg-dte"><div class="kpi-label">Disposal → Exit</div><div class="kpi-value">—</div><div class="kpi-unit">median</div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
       </div>
-
-      <!-- Charts -->
       <div class="grid-2">
-        <div class="card">
-          <div class="card-title">Disposal → Exit Trend by Discipline</div>
-          <div class="chart-wrap" style="height:260px">
-            <canvas id="chart-los-trend"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Median LOS Segments by Month</div>
-          <div class="chart-wrap" style="height:260px">
-            <canvas id="chart-segments"></canvas>
-          </div>
-        </div>
+        <div class="card"><div class="card-title">Disposal → Exit Trend by Discipline</div><div class="chart-wrap" style="height:260px"><canvas id="chart-los-trend"></canvas></div></div>
+        <div class="card"><div class="card-title">Median LOS Segments by Month</div><div class="chart-wrap" style="height:260px"><canvas id="chart-segments"></canvas></div></div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════
-         TAB: ACCESS BLOCK
-    ══════════════════════════════════════════════════════ -->
+    <!-- ACCESS BLOCK -->
     <div class="tab-panel" id="tab-access-block">
-      <div class="section-header">
-        <div class="section-title">Access Block Analysis</div>
-        <div class="section-desc">Disposal-to-exit times and boarding rates by inpatient discipline</div>
-      </div>
-
+      <div class="section-header"><div class="section-title">Access Block Analysis</div><div class="section-desc">Disposal-to-exit boarding times by disposal type</div></div>
       <div class="grid-2" style="margin-bottom:1.5rem">
-        <div class="card">
-          <div class="card-title">Disposal → Exit by Discipline (Median / P75 / P90)</div>
-          <div class="chart-wrap" style="height:280px">
-            <canvas id="chart-ab-discipline"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Access Block Rate by Discipline (% > 4 hrs)</div>
-          <div class="chart-wrap" style="height:280px">
-            <canvas id="chart-ab-rate"></canvas>
-          </div>
-        </div>
+        <div class="card"><div class="card-title">Disposal → Exit by Discipline (Median / P75 / P90)</div><div class="chart-wrap" style="height:280px"><canvas id="chart-ab-discipline"></canvas></div></div>
+        <div class="card"><div class="card-title">Access Block Rate by Discipline (% > 4 hrs)</div><div class="chart-wrap" style="height:280px"><canvas id="chart-ab-rate"></canvas></div></div>
       </div>
-
-      <div class="card">
-        <div class="card-title">Discipline Summary Table</div>
-        <div id="discipline-summary">
-          <div class="empty-state">
-            <div class="empty-icon">⊘</div>
-            <p>No data loaded yet</p>
-          </div>
-        </div>
-      </div>
+      <div class="card"><div class="card-title">Discipline Summary Table</div><div id="discipline-summary"><div class="empty-state"><div class="empty-icon">⊘</div><p>No data loaded yet</p></div></div></div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════
-         TAB: TIME PATTERNS
-    ══════════════════════════════════════════════════════ -->
+    <!-- TIME PATTERNS -->
     <div class="tab-panel" id="tab-time-patterns">
-      <div class="section-header">
-        <div class="section-title">Time Patterns</div>
-        <div class="section-desc">When does access block occur? Hour-of-day and day-of-week analysis</div>
-      </div>
-
-      <div style="margin-bottom:1rem;display:flex;align-items:center;gap:1rem">
-        <div class="filter-group">
-          <label class="filter-label">View by discipline</label>
-          <select id="heatmap-discipline" class="filter-select">
-            <option value="">All Disciplines</option>
-          </select>
-        </div>
-      </div>
-
+      <div class="section-header"><div class="section-title">Time Patterns</div><div class="section-desc">When does access block occur? Hour-of-day and day-of-week analysis</div></div>
+      <div style="margin-bottom:1rem"><div class="filter-group"><label class="filter-label">View by discipline</label><select id="heatmap-discipline" class="filter-select"><option value="">All Disciplines</option></select></div></div>
       <div class="card" style="margin-bottom:1rem">
-        <div class="card-title">Median Disposal → Exit by Hour × Day of Week</div>
-        <div class="section-desc" style="margin-bottom:1rem">Colour scale: green = short wait, red = prolonged boarding</div>
+        <div class="card-title">Median Disposal → Exit · Hour × Day of Week</div>
+        <div class="section-desc" style="margin-bottom:1rem">Colour scale: green = short wait → red = prolonged boarding</div>
         <div id="heatmap-container"></div>
       </div>
-
-      <div class="card">
-        <div class="card-title">Median Disposal → Exit by Day of Week</div>
-        <div class="chart-wrap" style="height:260px">
-          <canvas id="chart-dow"></canvas>
-        </div>
-      </div>
+      <div class="card"><div class="card-title">Median Disposal → Exit by Day of Week</div><div class="chart-wrap" style="height:260px"><canvas id="chart-dow"></canvas></div></div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════
-         TAB: DATA TABLE
-    ══════════════════════════════════════════════════════ -->
+    <!-- TRIAGE COMPLIANCE -->
+    <div class="tab-panel" id="tab-triage-compliance">
+      <div class="section-header"><div class="section-title">Triage Compliance</div><div class="section-desc">Triage-to-doctor time compliance · Red: immediate · Orange: ≤10 min · Yellow: ≤60 min · Green: ≤240 min</div></div>
+      <div class="kpi-grid" style="margin-bottom:1.5rem">
+        <div class="kpi-card triage-kpi-card" id="triage-kpi-red"><div class="kpi-label" style="color:var(--triage-red)">● Red — Immediate</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-sub"></div></div>
+        <div class="kpi-card triage-kpi-card" id="triage-kpi-orange"><div class="kpi-label" style="color:var(--triage-orange)">● Orange — ≤10 min</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-sub"></div></div>
+        <div class="kpi-card triage-kpi-card" id="triage-kpi-yellow"><div class="kpi-label" style="color:var(--triage-yellow)">● Yellow — ≤60 min</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-sub"></div></div>
+        <div class="kpi-card triage-kpi-card" id="triage-kpi-green"><div class="kpi-label" style="color:var(--triage-green)">● Green — ≤240 min</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-sub"></div></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:1.5rem">
+        <div class="card"><div class="card-title">Compliance % by Triage Category</div><div class="chart-wrap" style="height:260px"><canvas id="chart-triage-compliance"></canvas></div></div>
+        <div class="card"><div class="card-title">Median Actual Wait vs Target</div><div class="chart-wrap" style="height:260px"><canvas id="chart-triage-wait"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:1.5rem"><div class="card-title">Compliance Trend Over Time</div><div class="chart-wrap" style="height:260px"><canvas id="chart-triage-trend"></canvas></div></div>
+      <div class="card"><div class="card-title">Compliance Detail Table</div><div id="triage-detail-table"></div></div>
+    </div>
+
+    <!-- TRAUMA -->
+    <div class="tab-panel" id="tab-trauma">
+      <div class="section-header"><div class="section-title">Trauma Breakdown</div><div class="section-desc">Trauma vs non-trauma patient flow, triage acuity, and specific trauma type analysis</div></div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem">
+        <div class="trauma-split-card" id="trauma-kpi-n"><div class="trauma-split-label">Patients</div><div class="trauma-split-row"><div class="trauma-half"><div class="trauma-half-label t">Trauma</div><div class="trauma-val">—</div></div><div class="trauma-split-divider"></div><div class="trauma-half"><div class="trauma-half-label nt">Non-Trauma</div><div class="nontrauma-val">—</div></div></div></div>
+        <div class="trauma-split-card" id="trauma-kpi-los"><div class="trauma-split-label">Median LOS</div><div class="trauma-split-row"><div class="trauma-half"><div class="trauma-half-label t">Trauma</div><div class="trauma-val">—</div></div><div class="trauma-split-divider"></div><div class="trauma-half"><div class="trauma-half-label nt">Non-Trauma</div><div class="nontrauma-val">—</div></div></div></div>
+        <div class="trauma-split-card" id="trauma-kpi-dte"><div class="trauma-split-label">Median Disp→Exit</div><div class="trauma-split-row"><div class="trauma-half"><div class="trauma-half-label t">Trauma</div><div class="trauma-val">—</div></div><div class="trauma-split-divider"></div><div class="trauma-half"><div class="trauma-half-label nt">Non-Trauma</div><div class="nontrauma-val">—</div></div></div></div>
+        <div class="trauma-split-card" id="trauma-kpi-block"><div class="trauma-split-label">Access Block Rate</div><div class="trauma-split-row"><div class="trauma-half"><div class="trauma-half-label t">Trauma</div><div class="trauma-val">—</div></div><div class="trauma-split-divider"></div><div class="trauma-half"><div class="trauma-half-label nt">Non-Trauma</div><div class="nontrauma-val">—</div></div></div></div>
+        <div class="trauma-split-card" id="trauma-kpi-ttd"><div class="trauma-split-label">Median Triage→Doctor</div><div class="trauma-split-row"><div class="trauma-half"><div class="trauma-half-label t">Trauma</div><div class="trauma-val">—</div></div><div class="trauma-split-divider"></div><div class="trauma-half"><div class="trauma-half-label nt">Non-Trauma</div><div class="nontrauma-val">—</div></div></div></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:1.5rem">
+        <div class="card"><div class="card-title">Disposal → Exit: Trauma vs Non-Trauma</div><div class="chart-wrap" style="height:260px"><canvas id="chart-trauma-vs-nontrauma"></canvas></div></div>
+        <div class="card"><div class="card-title">Triage Acuity Distribution: Trauma vs Non-Trauma</div><div class="chart-wrap" style="height:260px"><canvas id="chart-trauma-triage-dist"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:1.5rem"><div class="card-title">Top Trauma Types by Volume</div><div class="chart-wrap" style="height:320px"><canvas id="chart-trauma-types"></canvas></div></div>
+      <div class="card"><div class="card-title">Trauma Type Detail Table</div><div id="trauma-detail-table"></div></div>
+    </div>
+
+    <!-- DATA TABLE -->
     <div class="tab-panel" id="tab-data-table">
-      <div class="section-header">
-        <div class="section-title">Data Table</div>
-        <div class="section-desc">Full record view — sortable, searchable, exportable</div>
+      <div class="section-header"><div class="section-title">Data Table</div><div class="section-desc">Full record view — sortable, searchable, exportable</div></div>
+      <div style="display:flex;gap:.75rem;margin-bottom:1rem;align-items:center">
+        <input type="search" id="table-search" class="filter-input" placeholder="Search discipline, triage, location…" style="flex:1;max-width:320px">
+        <button class="btn btn-secondary" id="btn-export-excel">↓ Export Excel</button>
       </div>
-
-      <div style="display:flex;gap:0.75rem;margin-bottom:1rem;align-items:center">
-        <input
-          type="search"
-          id="table-search"
-          class="filter-input"
-          placeholder="Search discipline, triage, location…"
-          style="flex:1;max-width:320px"
-        >
-        <button class="btn btn-secondary" id="btn-export-excel">
-          ↓ Export Excel
-        </button>
-      </div>
-
       <div class="table-wrap">
-        <table id="data-table">
-          <thead id="data-thead"></thead>
-          <tbody id="data-tbody">
-            <tr><td colspan="13" class="empty-state" style="padding:2rem">Loading data…</td></tr>
-          </tbody>
-        </table>
-        <div class="pagination">
-          <span id="pagination-info">—</span>
-          <div class="page-controls" id="page-controls"></div>
-        </div>
+        <table id="data-table"><thead id="data-thead"></thead><tbody id="data-tbody"><tr><td colspan="13" class="empty-state" style="padding:2rem">Loading data…</td></tr></tbody></table>
+        <div class="pagination"><span id="pagination-info">—</span><div class="page-controls" id="page-controls"></div></div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════
-         TAB: UPLOAD
-    ══════════════════════════════════════════════════════ -->
+    <!-- UPLOAD -->
     <div class="tab-panel" id="tab-upload">
-      <div class="section-header">
-        <div class="section-title">Upload Data</div>
-        <div class="section-desc">Add monthly Excel files to the HECTIS database. Duplicates are automatically skipped.</div>
-      </div>
-
+      <div class="section-header"><div class="section-title">Upload Data</div><div class="section-desc">Add monthly Excel files to the HECTIS database. Duplicates are automatically skipped.</div></div>
       <div class="grid-2">
         <div>
-          <div
-            id="upload-zone"
-            role="button"
-            tabindex="0"
-            aria-label="Upload Excel files"
-          >
+          <div id="upload-zone" role="button" tabindex="0">
             <div class="upload-icon">⬆</div>
             <div class="upload-title">Drop files here or click to browse</div>
             <div class="upload-desc">Accepts .xlsx, .xls, .csv — multiple files at once</div>
-            <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('file-input').click()">
-              Select Files
-            </button>
+            <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('file-input').click()">Select Files</button>
             <input type="file" id="file-input" accept=".xlsx,.xls,.csv" multiple>
           </div>
-
           <div id="upload-log"></div>
         </div>
-
         <div class="card" style="align-self:start">
           <div class="card-title">Expected File Format</div>
-          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">
-            Your Excel file must contain these column headers (first sheet):
-          </p>
-          <div style="font-family:var(--font-mono);font-size:0.75rem;display:flex;flex-direction:column;gap:0.35rem">
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Age</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Sex</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Arrival Time</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Triage Time</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Triage</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Consultation Time</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Trauma</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Disposal</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Disposal Time</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Exit Time</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="color:var(--green)">✓</span><span>Location</span></div>
+          <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem">Your Excel file must contain these column headers (first sheet):</p>
+          <div style="font-family:var(--font-mono);font-size:.75rem;display:flex;flex-direction:column;gap:.35rem">
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Age</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Sex</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Arrival Time</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Triage Time</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Triage</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Consultation Time</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Trauma</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Disposal</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Disposal Time</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Exit Time</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--green)">✓</span><span>Location</span></div>
           </div>
-          <div style="margin-top:1rem;padding:0.75rem;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border)">
-            <p style="font-size:0.75rem;color:var(--text-muted)">
-              <strong style="color:var(--yellow)">Tip:</strong> File name should include month and year
-              (e.g. <span style="color:var(--accent)">Disposals_March_2026.xlsx</span>) for accurate
-              trend analysis.
-            </p>
+          <div style="margin-top:1rem;padding:.75rem;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border)">
+            <p style="font-size:.75rem;color:var(--text-muted)"><strong style="color:var(--yellow)">Tip:</strong> Include month and year in the filename (e.g. <span style="color:var(--accent)">Disposals_March_2026.xlsx</span>) for accurate trend analysis.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div class="tab-panel" id="tab-help">
+      <div class="section-header"><div class="section-title">Help & User Guide</div><div class="section-desc">How to use HECTIS Analyser — Victoria Hospital Wynberg Emergency Centre</div></div>
+      <div class="grid-2">
+        <div>
+          <div class="card help-section" style="margin-bottom:1rem">
+            <h3>Getting Started</h3>
+            <ul>
+              <li>Go to <strong>Upload</strong> and drag your monthly Excel file onto the upload zone.</li>
+              <li>The app parses, validates, and inserts records into the HECTIS database automatically.</li>
+              <li>Duplicate records are silently skipped — safe to re-upload the same file.</li>
+              <li>To load historical data, upload multiple files at once.</li>
+            </ul>
+          </div>
+          <div class="card help-section" style="margin-bottom:1rem">
+            <h3>Filters</h3>
+            <p>The filter bar applies to <strong>all tabs simultaneously</strong>. Filter by date range, discipline, triage category, or trauma type. Click <code>Reset</code> to restore the full dataset.</p>
+          </div>
+          <div class="card help-section">
+            <h3>Generating a Report</h3>
+            <ul>
+              <li>Click <code>🖨 Report</code> in the filter bar at any time.</li>
+              <li>A management summary opens in a new tab with your current filtered data.</li>
+              <li>Click <strong>Print / Save PDF</strong> in that page to save or print.</li>
+              <li>The report includes KPIs, access block by discipline, triage compliance, and auto-generated interpretation.</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="card help-section" style="margin-bottom:1rem">
+            <h3>Understanding the Tabs</h3>
+            <ul>
+              <li><strong>Overview</strong> — Top-level KPIs and trend charts.</li>
+              <li><strong>Access Block</strong> — Boarding times per discipline. Core management metric.</li>
+              <li><strong>Time Patterns</strong> — Heatmap identifying when access block peaks.</li>
+              <li><strong>Triage Compliance</strong> — Triage-to-doctor times vs SATS-based targets.</li>
+              <li><strong>Trauma</strong> — Trauma vs non-trauma comparison and specific trauma types.</li>
+              <li><strong>Data Table</strong> — Full row-level data. Searchable, sortable, exportable.</li>
+            </ul>
+          </div>
+          <div class="card help-section" style="margin-bottom:1rem">
+            <h3>Key Metrics Explained</h3>
+            <ul>
+              <li><strong>Access block</strong> — Disposal-to-exit time exceeding 4 hours. Reflects inpatient capacity failure.</li>
+              <li><strong>Disposal → Exit</strong> — Decision to admit → patient physically leaving EC bed.</li>
+              <li><strong>Total LOS</strong> — Arrival to exit. Dominated by boarding for admitted patients.</li>
+              <li><strong>Triage compliance</strong> — % seen by EC doctor within target for their triage category.</li>
+              <li><strong>P75 / P90</strong> — 75th and 90th percentiles. More meaningful than maximums.</li>
+            </ul>
+          </div>
+          <div class="card help-section">
+            <h3>File Format Requirements</h3>
+            <p>Files must be <code>.xlsx</code>, <code>.xls</code>, or <code>.csv</code> with exact column names in the first sheet.</p>
+            <div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.3rem">
+              <span class="help-tag">Age</span><span class="help-tag">Sex</span><span class="help-tag">Arrival Time</span><span class="help-tag">Triage Time</span><span class="help-tag">Triage</span><span class="help-tag">Consultation Time</span><span class="help-tag">Trauma</span><span class="help-tag">Disposal</span><span class="help-tag">Disposal Time</span><span class="help-tag">Exit Time</span><span class="help-tag">Location</span>
+            </div>
+            <p style="margin-top:.75rem">Age formats: <code>3Y</code> · <code>9M</code> · <code>45</code> &nbsp;|&nbsp; Triage: <code>Red</code> · <code>Orange</code> · <code>Yellow</code> · <code>Green</code></p>
           </div>
         </div>
       </div>
@@ -346,20 +290,17 @@
   </main>
 </div>
 
-<!-- ── Scripts ───────────────────────────────────────────── -->
-<!-- SheetJS for Excel parsing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<!-- HECTIS modules (order matters) -->
 <script src="js/utils.js"></script>
 <script src="js/db.js"></script>
 <script src="js/upload.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/filters.js"></script>
 <script src="js/table.js"></script>
+<script src="js/triage.js"></script>
+<script src="js/trauma.js"></script>
+<script src="js/report.js"></script>
 <script src="js/app.js"></script>
-
-
 </body>
 </html>
