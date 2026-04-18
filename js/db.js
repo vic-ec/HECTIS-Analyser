@@ -72,16 +72,17 @@ const DB = (() => {
   }
 
   // ── Build dedup key for a row ────────────────────────────
-  // Uses 6 fields for a robust fingerprint that survives
-  // rounded/batch-entered times and null triage values.
+  // Truncates timestamps to minute precision (slice 0-16 of ISO string)
+  // to handle sub-second parsing noise from SheetJS.
   function dedupKey(r) {
+    const m = iso => iso ? String(iso).slice(0, 16) : 'N';
     return [
-      r.arrival_time      || 'N',
-      r.triage_time       || 'N',
-      r.consultation_time || 'N',
-      r.disposal_time     || 'N',
-      r.age_raw           || 'N',
-      r.sex               || 'N',
+      m(r.arrival_time),
+      m(r.triage_time),
+      m(r.consultation_time),
+      m(r.disposal_time),
+      (r.age_raw || 'N').toString().toUpperCase().trim(),
+      (r.sex     || 'N').toString().toUpperCase().trim(),
     ].join('|');
   }
 

@@ -144,18 +144,20 @@ const Upload = (() => {
       });
     }
 
-    // Deduplicate within the file itself using the same 6-field key
+    // Deduplicate within the file itself
+    // Truncate timestamps to minute precision to handle any sub-second parsing noise
+    const toMinKey = iso => iso ? iso.slice(0, 16) : 'N';
     const seenKeys = new Set();
-    const deduped = [];
+    const deduped  = [];
     let withinFileDups = 0;
     for (const r of transformed) {
       const key = [
-        r.arrival_time      || 'N',
-        r.triage_time       || 'N',
-        r.consultation_time || 'N',
-        r.disposal_time     || 'N',
-        r.age_raw           || 'N',
-        r.sex               || 'N',
+        toMinKey(r.arrival_time),
+        toMinKey(r.triage_time),
+        toMinKey(r.consultation_time),
+        toMinKey(r.disposal_time),
+        (r.age_raw || 'N').toUpperCase().trim(),
+        (r.sex     || 'N').toUpperCase().trim(),
       ].join('|');
       if (seenKeys.has(key)) {
         withinFileDups++;
