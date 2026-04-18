@@ -81,20 +81,19 @@
       </div>
       <div class="filter-actions">
         <button class="btn btn-ghost" id="btn-reset-filters">Reset</button>
-        <button class="btn btn-secondary" id="btn-compare-toggle">⇄ Compare</button>
+        <button class="btn btn-secondary" id="btn-compare-toggle" onclick="document.getElementById('compare-panel').style.display=document.getElementById('compare-panel').style.display==='none'?'':'none'">⇄ Compare</button>
         <button class="btn btn-secondary" id="btn-generate-report">🖨 Report</button>
       </div>
     </div>
-    <!-- Comparison period B panel -->
-    <div id="compare-period-panel" style="display:none;flex-wrap:wrap;gap:1rem;align-items:center;background:var(--surface-2);border:1px solid var(--accent-glow);border-radius:var(--radius-lg);padding:0.75rem 1.5rem;margin-bottom:1rem">
-      <span style="font-size:0.72rem;font-family:var(--font-mono);color:var(--accent);letter-spacing:0.06em;text-transform:uppercase">Period B</span>
-      <div class="filter-group"><label class="filter-label">From</label><input type="date" id="filter-date-from-b" class="filter-input"></div>
-      <div class="filter-group"><label class="filter-label">To</label><input type="date" id="filter-date-to-b" class="filter-input"></div>
-      <div style="font-size:0.75rem;color:var(--text-muted)">KPIs and trend chart will show Period A vs Period B</div>
+    <!-- Multi-period comparison panel -->
+    <div id="compare-panel" style="margin-bottom:1rem">
+      <div id="compare-periods-container"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem">
+        <button class="btn btn-ghost" id="btn-add-period" style="font-size:0.78rem">+ Add comparison period</button>
+        <button class="btn btn-ghost" id="btn-clear-periods" onclick="Compare.clearAll()" style="font-size:0.72rem;color:var(--text-dim)">Clear all</button>
+      </div>
+      <div id="compare-period-labels" style="display:none;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem"></div>
     </div>
-    <div style="display:none;gap:1rem;margin-bottom:0.5rem;font-size:0.72rem;font-family:var(--font-mono);color:var(--text-muted)">
-      <span id="compare-label-a"></span>
-      <span id="compare-label-b"></span>
     </div>
 
     <!-- OVERVIEW -->
@@ -301,6 +300,7 @@
 <script src="js/triage.js"></script>
 <script src="js/trauma.js"></script>
 <script src="js/report.js"></script>
+<script src="js/compare.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
