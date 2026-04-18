@@ -72,25 +72,28 @@ const DB = (() => {
   }
 
   // ── Build dedup key for a row ────────────────────────────
-  // Matches the logic of our three partial indexes combined
+  // Uses 6 fields for a robust fingerprint that survives
+  // rounded/batch-entered times and null triage values.
   function dedupKey(r) {
-    const a = r.arrival_time     || 'NULL';
-    const t = r.triage_time      || 'NULL';
-    const c = r.consultation_time || 'NULL';
-    return `${a}|${t}|${c}`;
+    return [
+      r.arrival_time      || 'N',
+      r.triage_time       || 'N',
+      r.consultation_time || 'N',
+      r.disposal_time     || 'N',
+      r.age_raw           || 'N',
+      r.sex               || 'N',
+    ].join('|');
   }
 
   // ── Fetch existing keys for a month ─────────────────────
-  // Pulls just the three timestamp columns for a given month
-  // so we can do client-side dedup without loading full rows
   async function fetchExistingKeys(year, month) {
     const keys = new Set();
     const PAGE = 1000;
     let from = 0;
 
     while (true) {
-      let url = `${SUPABASE_URL}/rest/v1/${TABLE}` +
-        `?select=arrival_time,triage_time,consultation_time` +
+      const url = `${SUPABASE_URL}/rest/v1/${TABLE}` +
+        `?select=arrival_time,triage_time,consultation_time,disposal_time,age_raw,sex` +
         `&upload_year=eq.${year}&upload_month=eq.${month}`;
 
       const res = await fetch(url, {

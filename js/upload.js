@@ -144,7 +144,28 @@ const Upload = (() => {
       });
     }
 
-    return { records: transformed, skipped: skippedCount };
+    // Deduplicate within the file itself using the same 6-field key
+    const seenKeys = new Set();
+    const deduped = [];
+    let withinFileDups = 0;
+    for (const r of transformed) {
+      const key = [
+        r.arrival_time      || 'N',
+        r.triage_time       || 'N',
+        r.consultation_time || 'N',
+        r.disposal_time     || 'N',
+        r.age_raw           || 'N',
+        r.sex               || 'N',
+      ].join('|');
+      if (seenKeys.has(key)) {
+        withinFileDups++;
+      } else {
+        seenKeys.add(key);
+        deduped.push(r);
+      }
+    }
+
+    return { records: deduped, skipped: skippedCount + withinFileDups };
   }
 
   // ── Process & Upload One File ────────────────────────────
