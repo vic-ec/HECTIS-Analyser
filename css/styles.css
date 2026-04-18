@@ -4,7 +4,7 @@
    Victoria Hospital Wynberg — Emergency Centre
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
@@ -38,7 +38,7 @@
   --radius-lg:    12px;
   --transition:   0.18s ease;
 
-  --font-display: 'DM Serif Display', serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
   --font-body:    'DM Sans', sans-serif;
   --font-mono:    'DM Mono', monospace;
 }
@@ -193,7 +193,7 @@ body {
 
 /* ── Main Content ──────────────────────────────────────────── */
 #main {
-  padding: 2rem;
+  padding: 1rem 2rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
@@ -327,8 +327,8 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 0.75rem;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
