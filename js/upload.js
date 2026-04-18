@@ -12,6 +12,23 @@ const Upload = (() => {
     'Exit Time', 'Location'
   ];
 
+  // ── Normalise a column name for comparison ───────────────
+  // Strips BOM, trims whitespace, normalises to lowercase
+  function normCol(s) {
+    return String(s || '').replace(/^﻿/, '').trim().toLowerCase();
+  }
+
+  // ── Build a column map: expected name → actual key in row ─
+  function buildColMap(firstRow) {
+    const actualKeys = Object.keys(firstRow);
+    const map = {};
+    for (const expected of REQUIRED_COLS) {
+      const match = actualKeys.find(k => normCol(k) === normCol(expected));
+      if (match) map[expected] = match;
+    }
+    return map;
+  }
+
   // ── Parse a Single Excel/CSV File ────────────────────────
   async function parseFile(file) {
     return new Promise((resolve, reject) => {
@@ -28,14 +45,23 @@ const Upload = (() => {
             return reject(new Error('File appears to be empty'));
           }
 
-          // Validate columns
-          const cols = Object.keys(rows[0]);
-          const missing = REQUIRED_COLS.filter(c => !cols.includes(c));
+          // Build flexible column map
+          const colMap = buildColMap(rows[0]);
+          const missing = REQUIRED_COLS.filter(c => !colMap[c]);
           if (missing.length > 0) {
             return reject(new Error(`Missing columns: ${missing.join(', ')}`));
           }
 
-          resolve({ rows, filename: file.name });
+          // Remap rows to use canonical column names
+          const normalised = rows.map(r => {
+            const out = {};
+            for (const [expected, actual] of Object.entries(colMap)) {
+              out[expected] = r[actual];
+            }
+            return out;
+          });
+
+          resolve({ rows: normalised, filename: file.name });
         } catch (err) {
           reject(new Error(`Failed to parse file: ${err.message}`));
         }
