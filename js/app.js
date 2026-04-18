@@ -46,7 +46,7 @@ const App = (() => {
       const exportBtn = document.getElementById('btn-export-excel');
       if (exportBtn) exportBtn.onclick = () => Table.exportExcel(window.__hectisFiltered || []);
       const reportBtn = document.getElementById('btn-generate-report');
-      if (reportBtn) reportBtn.onclick = () => Report.generate(window.__hectisFiltered || []);
+      if (reportBtn) reportBtn.onclick = () => { if (typeof Report !== 'undefined') Report.generate(window.__hectisFiltered || []); };
     } catch (err) {
       console.error('Load failed:', err);
       if (countEl) countEl.textContent = 'Load failed';
@@ -65,8 +65,8 @@ const App = (() => {
     renderOverview();
     renderAccessBlock();
     renderTimePatterns();
-    Triage.render(filteredData);
-    Trauma.render(filteredData);
+    if (typeof Triage !== 'undefined') Triage.render(filteredData);
+    if (typeof Trauma !== 'undefined') Trauma.render(filteredData);
     Table.render(filteredData);
   }
 
