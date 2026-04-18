@@ -71,53 +71,98 @@ const DB = (() => {
     return all;
   }
 
-  // ── Insert Rows ──────────────────────────────────────────
-  // Splits rows into three buckets based on NULL pattern,
-  // each matching one of the three partial unique indexes.
-  // Falls back to individual inserts if chunk upsert fails.
+  // ── Build dedup key for a row ────────────────────────────
+  // Matches the logic of our three partial indexes combined
+  function dedupKey(r) {
+    const a = r.arrival_time     || 'NULL';
+    const t = r.triage_time      || 'NULL';
+    const c = r.consultation_time || 'NULL';
+    return `${a}|${t}|${c}`;
+  }
+
+  // ── Fetch existing keys for a month ─────────────────────
+  // Pulls just the three timestamp columns for a given month
+  // so we can do client-side dedup without loading full rows
+  async function fetchExistingKeys(year, month) {
+    const keys = new Set();
+    const PAGE = 1000;
+    let from = 0;
+
+    while (true) {
+      let url = `${SUPABASE_URL}/rest/v1/${TABLE}` +
+        `?select=arrival_time,triage_time,consultation_time` +
+        `&upload_year=eq.${year}&upload_month=eq.${month}`;
+
+      const res = await fetch(url, {
+        headers: { ...headers, 'Prefer': 'count=exact', 'Range': `${from}-${from + PAGE - 1}` }
+      });
+
+      if (!res.ok) break;
+      const data = await res.json();
+      data.forEach(r => keys.add(dedupKey(r)));
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+
+    return keys;
+  }
+
+  // ── Insert Rows (client-side dedup, plain INSERT) ────────
+  // No ON CONFLICT — we filter duplicates ourselves before sending.
+  // This works regardless of index type or PostgREST version.
   async function insertRows(rows) {
     if (!rows.length) return { inserted: 0, skipped: 0, errors: [] };
 
-    // Bucket rows by which index applies
-    const withBoth   = rows.filter(r => r.triage_time       && r.consultation_time);
-    const nullTriage = rows.filter(r => !r.triage_time      && r.consultation_time);
-    const nullBoth   = rows.filter(r => !r.triage_time      && !r.consultation_time);
+    // Group rows by year+month so we fetch existing keys efficiently
+    const byMonth = {};
+    rows.forEach(r => {
+      const k = `${r.upload_year}-${r.upload_month}`;
+      if (!byMonth[k]) byMonth[k] = { year: r.upload_year, month: r.upload_month, rows: [] };
+      byMonth[k].rows.push(r);
+    });
 
     let inserted = 0, skipped = 0;
     const errors = [];
 
-    const runBucket = async (bucket, conflictCols) => {
-      const CHUNK = 100;
-      for (let i = 0; i < bucket.length; i += CHUNK) {
-        const chunk = bucket.slice(i, i + CHUNK);
-        const url   = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=${conflictCols}`;
+    for (const { year, month, rows: monthRows } of Object.values(byMonth)) {
+      // Fetch existing keys for this month
+      const existing = await fetchExistingKeys(year, month);
+
+      // Filter out duplicates
+      const newRows = monthRows.filter(r => !existing.has(dedupKey(r)));
+      skipped += monthRows.length - newRows.length;
+
+      if (!newRows.length) continue;
+
+      // Insert in chunks — plain POST, no ON CONFLICT needed
+      const CHUNK = 200;
+      for (let i = 0; i < newRows.length; i += CHUNK) {
+        const chunk = newRows.slice(i, i + CHUNK);
         try {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { ...headers, 'Prefer': 'resolution=ignore-duplicates,return=representation' },
-            body: JSON.stringify(chunk)
-          });
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/${TABLE}`,
+            {
+              method: 'POST',
+              headers: { ...headers, 'Prefer': 'return=representation' },
+              body: JSON.stringify(chunk)
+            }
+          );
 
           if (!res.ok) {
             let msg = `HTTP ${res.status}`;
             try { const e = await res.json(); msg = e.message || e.details || msg; } catch {}
-            errors.push(`Chunk ${Math.floor(i/CHUNK)+1} (${conflictCols}): ${msg}`);
+            errors.push(`Chunk ${Math.floor(i/CHUNK)+1}: ${msg}`);
             continue;
           }
 
           const result = await res.json();
           inserted += result.length;
-          skipped  += chunk.length - result.length;
 
         } catch (e) {
           errors.push(`Chunk ${Math.floor(i/CHUNK)+1}: ${e.message}`);
         }
       }
-    };
-
-    await runBucket(withBoth,   'arrival_time,triage_time,consultation_time');
-    await runBucket(nullTriage, 'arrival_time,consultation_time');
-    await runBucket(nullBoth,   'arrival_time');
+    }
 
     return { inserted, skipped, errors };
   }
@@ -126,7 +171,8 @@ const DB = (() => {
   async function getAvailableMonths() {
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/${TABLE}?select=upload_year,upload_month&order=upload_year.asc,upload_month.asc`,
+        `${SUPABASE_URL}/rest/v1/${TABLE}?select=upload_year,upload_month` +
+        `&order=upload_year.asc,upload_month.asc`,
         { headers: { ...headers, 'Prefer': 'count=exact', 'Range': '0-999' } }
       );
       const data = await res.json();
