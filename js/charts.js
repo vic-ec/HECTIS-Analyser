@@ -197,67 +197,93 @@ const Charts = (() => {
   }
 
   // ── Total LOS Trend by Month ─────────────────────────────
-  function renderLosTrend(id, data) {
+  // Modes:
+  //   1. Single period, one year  → monthly trend by disposal
+  //   2. Single period, multi-year → year-over-year overlay by month
+  //   3. Period A vs Period B      → two lines, dashed for B
+  function renderLosTrend(id, allData, filteredData, dataB) {
     const canvas = getCanvas(id);
     if (!canvas) return;
+    const data = filteredData || allData;
+    const MN = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const baseOpts = {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color:'#7d8590', font:{family:'DM Mono',size:11}, boxWidth:12, padding:16 } },
+        tooltip: { backgroundColor:'#21262d', borderColor:'#30363d', borderWidth:1, titleColor:'#e6edf3', bodyColor:'#7d8590', titleFont:{family:'DM Mono',size:11}, bodyFont:{family:'DM Mono',size:11}, padding:10, cornerRadius:6, callbacks:{ label: ctx => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + ' hrs' : 'N/A'}` } }
+      },
+      scales: {
+        x: { ticks:{color:'#7d8590',font:{family:'DM Mono',size:10}}, grid:{color:'#21262d'}, border:{color:'#30363d'} },
+        y: { ticks:{color:'#7d8590',font:{family:'DM Mono',size:10}}, grid:{color:'#21262d'}, border:{color:'#30363d'}, title:{display:true, text:'Median disposal→exit (hrs)', color:'#7d8590', font:{family:'DM Mono',size:10}} }
+      }
+    };
 
-    // Group by year-month
-    const byMonth = {};
-    for (const r of data) {
-      if (!r.upload_year || !r.upload_month) continue;
-      const key = `${r.upload_year}-${String(r.upload_month).padStart(2,'0')}`;
-      if (!byMonth[key]) byMonth[key] = [];
-      byMonth[key].push(r);
+    // ── Mode 3: Period A vs B comparison ────────────────
+    if (dataB && dataB.length) {
+      const toMonthly = d => {
+        const m = {};
+        d.forEach(r => {
+          if (!r.upload_year||!r.upload_month) return;
+          const k = `${r.upload_year}-${String(r.upload_month).padStart(2,'0')}`;
+          if (!m[k]) m[k] = [];
+          m[k].push(r);
+        });
+        return m;
+      };
+      const mA = toMonthly(data), mB = toMonthly(dataB);
+      const keys = [...new Set([...Object.keys(mA),...Object.keys(mB)])].sort();
+      const labels = keys.map(k => { const [y,m]=k.split('-'); return `${MN[parseInt(m)]} ${y}`; });
+      const med = (byM,k) => { const rows=(byM[k]||[]).filter(r=>r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0); return rows.length>=3?Utils.r0(Utils.toHours(Utils.median(rows.map(r=>r.disposal_to_exit_min)))):null; };
+      registry[id] = new Chart(canvas, {
+        type:'line',
+        data:{ labels, datasets:[
+          { label:'Period A', data:keys.map(k=>med(mA,k)), borderColor:'#58a6ff', backgroundColor:'#58a6ff22', borderWidth:2, pointRadius:3, tension:0.3, spanGaps:true },
+          { label:'Period B', data:keys.map(k=>med(mB,k)), borderColor:'#f85149', backgroundColor:'#f8514922', borderWidth:2, borderDash:[5,3], pointRadius:3, tension:0.3, spanGaps:true }
+        ]},
+        options: baseOpts
+      });
+      return;
     }
 
-    const MONTH_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // ── Mode 2: Multi-year overlay ───────────────────────
+    const years = [...new Set(data.map(r=>r.upload_year).filter(Boolean))].sort();
+    if (years.length > 1) {
+      const yColors = ['#f85149','#58a6ff','#3fb950','#bc8cff','#d29922','#f778ba'];
+      const datasets = years.map((yr,yi) => {
+        const yd = data.filter(r=>r.upload_year===yr);
+        return {
+          label: String(yr),
+          data: Array.from({length:12},(_,i)=>i+1).map(m => {
+            const rows = yd.filter(r=>r.upload_month===m&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
+            return rows.length>=3?Utils.r0(Utils.toHours(Utils.median(rows.map(r=>r.disposal_to_exit_min)))):null;
+          }),
+          borderColor: yColors[yi%yColors.length], backgroundColor: yColors[yi%yColors.length]+'22',
+          borderWidth:2, pointRadius:3, pointHoverRadius:5, tension:0.3, spanGaps:true,
+        };
+      });
+      registry[id] = new Chart(canvas, { type:'line', data:{ labels:MN.slice(1), datasets }, options:baseOpts });
+      return;
+    }
+
+    // ── Mode 1: Standard monthly trend by disposal ───────
+    const byMonth = {};
+    data.forEach(r => {
+      if (!r.upload_year||!r.upload_month) return;
+      const k = `${r.upload_year}-${String(r.upload_month).padStart(2,'0')}`;
+      if (!byMonth[k]) byMonth[k]=[];
+      byMonth[k].push(r);
+    });
     const keys = Object.keys(byMonth).sort();
-    const labels = keys.map(k => {
-      const [y, m] = k.split('-');
-      return `${MONTH_NAMES[parseInt(m)]} ${y}`;
-    });
-
-    const disciplines = [...new Set(data.map(r => r.disposal))].filter(Boolean);
-    const datasets = disciplines.map(d => ({
+    const labels = keys.map(k => { const [y,m]=k.split('-'); return `${MN[parseInt(m)]} ${y}`; });
+    const disposals = [...new Set(data.map(r=>r.disposal))].filter(Boolean);
+    const datasets = disposals.map(d => ({
       label: Utils.shortDiscipline(d),
-      data: keys.map(k => {
-        const rows = byMonth[k].filter(r => r.disposal === d && r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
-        return rows.length >= 3 ? Utils.r0(Utils.toHours(Utils.median(rows.map(r => r.disposal_to_exit_min)))) : null;
-      }),
-      borderColor: Utils.disciplineColor(d),
-      backgroundColor: Utils.disciplineColor(d) + '22',
-      borderWidth: 2,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      tension: 0.3,
-      spanGaps: true,
+      data: keys.map(k => { const rows=byMonth[k].filter(r=>r.disposal===d&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0); return rows.length>=3?Utils.r0(Utils.toHours(Utils.median(rows.map(r=>r.disposal_to_exit_min)))):null; }),
+      borderColor: Utils.disciplineColor(d), backgroundColor: Utils.disciplineColor(d)+'22',
+      borderWidth:2, pointRadius:3, pointHoverRadius:5, tension:0.3, spanGaps:true,
     }));
-
-    registry[id] = new Chart(canvas, {
-      type: 'line',
-      data: { labels, datasets },
-      options: {
-        ...baseOptions,
-        plugins: {
-          ...baseOptions.plugins,
-          tooltip: {
-            ...baseOptions.plugins.tooltip,
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + ' hrs' : 'N/A'}`
-            }
-          }
-        },
-        scales: {
-          ...baseOptions.scales,
-          y: {
-            ...baseOptions.scales.y,
-            title: { display: true, text: 'Median disposal→exit (hours)', color: '#7d8590', font: { family: 'DM Mono', size: 10 } }
-          }
-        }
-      }
-    });
+    registry[id] = new Chart(canvas, { type:'line', data:{ labels, datasets }, options:baseOpts });
   }
-
   // ── LOS Segments Stacked (Overall) ──────────────────────
   function renderSegmentBreakdown(id, data) {
     const canvas = getCanvas(id);
