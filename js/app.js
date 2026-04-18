@@ -43,12 +43,30 @@ const App = (() => {
     if (countEl) countEl.textContent = 'Loading…';
     try {
       allData = await DB.fetchAll({}, (loaded, total) => {
-        if (countEl) countEl.textContent = `Loading ${loaded}/${total}…`;
+        if (countEl) {
+          if (loaded === total && loaded > 0) {
+            countEl.textContent = `${loaded.toLocaleString()} records (cached)`;
+          } else {
+            countEl.textContent = `Loading ${loaded}/${total}…`;
+          }
+        }
       });
       if (countEl) countEl.textContent = `${allData.length.toLocaleString()} records`;
       Filters.populate(allData);
       filteredData  = Filters.apply(allData);
       window.__hectisFiltered = filteredData;
+
+      // Register background sync callback — fires if new records arrive after cache served
+      window.__hectisSyncCallback = (updatedData) => {
+        allData      = updatedData;
+        filteredData = Filters.apply(allData);
+        window.__hectisFiltered = filteredData;
+        if (countEl) countEl.textContent = `${allData.length.toLocaleString()} records`;
+        Filters.populate(allData);
+        setTimeout(() => renderAll(), 50);
+        Utils.toast(`${(updatedData.length - allData.length + updatedData.length - updatedData.length).toLocaleString()} new records synced`, 'info', 2500);
+      };
+
       // Small defer to ensure DOM is ready before rendering heavy modules
       setTimeout(() => renderAll(), 50);
 
@@ -314,7 +332,14 @@ const App = (() => {
     if (!valid.length) { Utils.toast('Please upload .xlsx, .xls or .csv files','warn'); return; }
     const logEl = document.getElementById('upload-log');
     if (logEl) logEl.innerHTML = '';
-    Upload.processFiles(valid, logEntry, async ok => { if(ok){ Utils.toast('Upload complete — refreshing data…','success'); await loadData(); } });
+    Upload.processFiles(valid, logEntry, async ok => {
+      if (ok) {
+        Utils.toast('Upload complete — refreshing data…', 'success');
+        // Invalidate IndexedDB cache so loadData fetches fresh from Supabase
+        if (typeof DB !== 'undefined' && DB.invalidateCache) await DB.invalidateCache();
+        await loadData();
+      }
+    });
   }
 
   function logEntry(type, html) {
