@@ -775,3 +775,129 @@ tr:last-child td { border-bottom: none; }
   #header { padding: 0 1rem; }
   #nav { padding: 0 1rem; }
 }
+
+/* ── Multi-select dropdown ───────────────────────────────── */
+.multiselect-wrap {
+  position: relative;
+}
+
+.multiselect-trigger {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  padding: 0.45rem 0.75rem;
+  transition: border-color var(--transition);
+}
+
+.multiselect-trigger:hover,
+.multiselect-trigger:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.multiselect-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 200;
+  padding: 0.35rem;
+}
+
+.multiselect-list.open {
+  display: block;
+}
+
+.multiselect-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: background var(--transition), color var(--transition);
+  user-select: none;
+}
+
+.multiselect-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.multiselect-item.checked {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.multiselect-item input[type=checkbox] {
+  accent-color: var(--accent);
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* ── Compare button ──────────────────────────────────────── */
+#btn-compare-toggle {
+  transition: all var(--transition);
+}
+
+#btn-compare-toggle.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── KPI delta comparison ────────────────────────────────── */
+.kpi-compare {
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border-light);
+  margin-top: 0.4rem;
+}
+
+.compare-b {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.delta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 99px;
+  margin-left: 0.25rem;
+}
+
+.delta-better {
+  background: rgba(63,185,80,0.15);
+  color: var(--green);
+}
+
+.delta-worse {
+  background: rgba(248,81,73,0.15);
+  color: var(--red);
+}
+
+.delta-neutral {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
