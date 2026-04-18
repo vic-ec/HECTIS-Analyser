@@ -97,7 +97,10 @@ const App = (() => {
       const blockable = d.filter(r => r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
       const blocked   = blockable.filter(r => r.access_block_4hr);
       const blockRate = blockable.length ? Utils.r1((blocked.length / blockable.length) * 100) : null;
-      const grouped   = Utils.groupBy(d.filter(r=>r.disposal&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0),'disposal');
+      // Worst discipline: only referral disposals (not discharges/absconded/deceased)
+      const referrals = d.filter(r => r.disposal && Utils.isReferral(r.disposal) &&
+                                      r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
+      const grouped   = Utils.groupBy(referrals, 'disposal');
       let worstD = null, worstM = -1;
       Object.entries(grouped).forEach(([disc,rows]) => {
         const med = Utils.median(rows.map(r=>r.disposal_to_exit_min));
@@ -112,7 +115,8 @@ const App = (() => {
           att: Utils.r0(Utils.median(d.map(r=>r.arrival_to_triage_min).filter(v=>v!==null&&v>=0))),
           ttd: Utils.r0(Utils.median(d.map(r=>r.triage_to_doctor_min).filter(v=>v!==null&&v>=0))),
           dtd: Utils.r0(Utils.median(d.map(r=>r.doctor_to_disposal_min).filter(v=>v!==null&&v>=0))),
-          dte: Utils.r0(Utils.median(d.map(r=>r.disposal_to_exit_min).filter(v=>v!==null&&v>=0))),
+          // Disposal→Exit: referral patients only (meaningful boarding time)
+          dte: Utils.r0(Utils.median(referrals.map(r=>r.disposal_to_exit_min))),
         }
       };
     }

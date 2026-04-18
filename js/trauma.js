@@ -23,9 +23,11 @@ const Trauma = (() => {
   // ── Key metrics for a set of rows ───────────────────────
   function calcMetrics(rows) {
     const los  = rows.map(r => r.total_los_min).filter(v => v !== null && v >= 0);
-    const dte  = rows.map(r => r.disposal_to_exit_min).filter(v => v !== null && v >= 0);
     const ttd  = rows.map(r => r.triage_to_doctor_min).filter(v => v !== null && v >= 0);
-    const blockable = rows.filter(r => r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
+    // Disposal→Exit: referral patients only — discharges/absconded have 0min which skews median
+    const referrals = rows.filter(r => r.disposal && Utils.isReferral(r.disposal));
+    const dte  = referrals.map(r => r.disposal_to_exit_min).filter(v => v !== null && v >= 0);
+    const blockable = referrals.filter(r => r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
     const blocked   = blockable.filter(r => r.access_block_4hr);
 
     return {

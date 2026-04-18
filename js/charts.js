@@ -276,7 +276,7 @@ const Charts = (() => {
         return {
           label: String(yr),
           data: Array.from({length:12},(_,i)=>i+1).map(m => {
-            const rows = yd.filter(r=>r.upload_month===m&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
+            const rows = yd.filter(r=>r.upload_month===m&&Utils.isReferral(r.disposal)&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
             return rows.length>=3?Utils.r0(Utils.toHours(Utils.median(rows.map(r=>r.disposal_to_exit_min)))):null;
           }),
           borderColor: yColors[yi%yColors.length], backgroundColor: yColors[yi%yColors.length]+'22',
@@ -297,7 +297,8 @@ const Charts = (() => {
     });
     const keys = Object.keys(byMonth).sort();
     const labels = keys.map(k => { const [y,m]=k.split('-'); return `${MN[parseInt(m)]} ${y}`; });
-    const disposals = [...new Set(data.map(r=>r.disposal))].filter(Boolean);
+    // Only referral disposals — discharges have 0min boarding which is not meaningful
+    const disposals = [...new Set(data.map(r=>r.disposal))].filter(d => d && Utils.isReferral(d));
     const datasets = disposals.map(d => ({
       label: Utils.shortDiscipline(d),
       data: keys.map(k => { const rows=byMonth[k].filter(r=>r.disposal===d&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0); return rows.length>=3?Utils.r0(Utils.toHours(Utils.median(rows.map(r=>r.disposal_to_exit_min)))):null; }),
