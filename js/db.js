@@ -6,7 +6,7 @@ const DB = (() => {
 
   const SUPABASE_URL = 'https://gjvbltadcdbuukymgjhs.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdmJsdGFkY2RidXVreW1namhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNjI4NTMsImV4cCI6MjA5MTkzODg1M30.xmpUKnQzO4ClcqE6kB03RACXTiVIqyXlVwNBoN8zkQM';
-  const TABLE = 'ec_access_block';
+  const TABLE = 'vhw_hectis_data';
 
   const headers = {
     'Content-Type': 'application/json',
