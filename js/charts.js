@@ -201,7 +201,7 @@ const Charts = (() => {
   //   1. Single period, one year  → monthly trend by disposal
   //   2. Single period, multi-year → year-over-year overlay by month
   //   3. Period A vs Period B      → two lines, dashed for B
-  function renderLosTrend(id, allData, filteredData, dataB) {
+  function renderLosTrend(id, allData, filteredData, compPeriods) {
     const canvas = getCanvas(id);
     if (!canvas) return;
     const data = filteredData || allData;
@@ -218,8 +218,9 @@ const Charts = (() => {
       }
     };
 
-    // ── Mode 3: Period A vs B comparison ────────────────
-    if (dataB && dataB.length) {
+    // ── Mode 3: Multi-period comparison ─────────────────
+    // compPeriods is an array of { label, color, data } objects
+    if (compPeriods && compPeriods.length > 0 && compPeriods.some(p => p.data && p.data.length > 0)) {
       const toMonthly = d => {
         const m = {};
         d.forEach(r => {
@@ -230,18 +231,39 @@ const Charts = (() => {
         });
         return m;
       };
-      const mA = toMonthly(data), mB = toMonthly(dataB);
-      const keys = [...new Set([...Object.keys(mA),...Object.keys(mB)])].sort();
+      const mBase = toMonthly(data);
+      const allKeys = new Set(Object.keys(mBase));
+      compPeriods.forEach(p => { if (p.data) Object.keys(toMonthly(p.data)).forEach(k => allKeys.add(k)); });
+      const keys = [...allKeys].sort();
       const labels = keys.map(k => { const [y,m]=k.split('-'); return `${MN[parseInt(m)]} ${y}`; });
-      const med = (byM,k) => { const rows=(byM[k]||[]).filter(r=>r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0); return rows.length>=3?Utils.r0(Utils.toHours(Utils.median(rows.map(r=>r.disposal_to_exit_min)))):null; };
-      registry[id] = new Chart(canvas, {
-        type:'line',
-        data:{ labels, datasets:[
-          { label:'Period A', data:keys.map(k=>med(mA,k)), borderColor:'#58a6ff', backgroundColor:'#58a6ff22', borderWidth:2, pointRadius:3, tension:0.3, spanGaps:true },
-          { label:'Period B', data:keys.map(k=>med(mB,k)), borderColor:'#f85149', backgroundColor:'#f8514922', borderWidth:2, borderDash:[5,3], pointRadius:3, tension:0.3, spanGaps:true }
-        ]},
-        options: baseOpts
+      const med = rows => { const v=rows.filter(r=>r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0); return v.length>=3?Utils.r0(Utils.toHours(Utils.median(v.map(r=>r.disposal_to_exit_min)))):null; };
+
+      // Base period dataset
+      const datasets = [{
+        label: 'Base period',
+        data: keys.map(k => med(mBase[k]||[])),
+        borderColor: '#8b949e', backgroundColor: '#8b949e22',
+        borderWidth: 2, pointRadius: 3, tension: 0.3, spanGaps: true,
+        borderDash: []
+      }];
+
+      // One dataset per comparison period
+      compPeriods.filter(p => p.data && p.data.length > 0).forEach((p, pi) => {
+        const mP = toMonthly(p.data);
+        datasets.push({
+          label: `Period ${p.label}`,
+          data: keys.map(k => med(mP[k]||[])),
+          borderColor: p.color,
+          backgroundColor: p.color + '22',
+          borderWidth: 2,
+          borderDash: pi > 0 ? [5,3] : [],
+          pointRadius: 3,
+          tension: 0.3,
+          spanGaps: true,
+        });
       });
+
+      registry[id] = new Chart(canvas, { type:'line', data:{ labels, datasets }, options:baseOpts });
       return;
     }
 

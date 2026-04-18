@@ -6,13 +6,22 @@ const App = (() => {
 
   let allData      = [];
   let filteredData = [];
-  let filteredDataB = null; // comparison period
 
   async function init() {
     setupTabs();
     setupUploadZone();
     Table.init();
     Filters.bind(onFilterChange);
+    // Wire report button early so it works regardless of load state
+    const reportBtn = document.getElementById('btn-generate-report');
+    if (reportBtn) {
+      reportBtn.addEventListener('click', () => {
+        const data = window.__hectisFiltered || [];
+        if (!data.length) { Utils.toast('No data loaded yet', 'warn'); return; }
+        if (typeof Report !== 'undefined') Report.generate(data);
+      });
+    }
+    if (typeof Compare !== 'undefined') Compare.init(onFilterChange);
     await checkConnection();
     await loadData();
   }
@@ -39,14 +48,12 @@ const App = (() => {
       if (countEl) countEl.textContent = `${allData.length.toLocaleString()} records`;
       Filters.populate(allData);
       filteredData  = Filters.apply(allData);
-      filteredDataB = Filters.applyB(allData);
       window.__hectisFiltered = filteredData;
-      renderAll();
+      // Small defer to ensure DOM is ready before rendering heavy modules
+      setTimeout(() => renderAll(), 50);
 
       const exportBtn = document.getElementById('btn-export-excel');
       if (exportBtn) exportBtn.onclick = () => Table.exportExcel(window.__hectisFiltered || []);
-      const reportBtn = document.getElementById('btn-generate-report');
-      if (reportBtn) reportBtn.onclick = () => { if (typeof Report !== 'undefined') Report.generate(window.__hectisFiltered || []); };
     } catch (err) {
       console.error('Load failed:', err);
       if (countEl) countEl.textContent = 'Load failed';
@@ -56,7 +63,6 @@ const App = (() => {
 
   function onFilterChange() {
     filteredData  = Filters.apply(allData);
-    filteredDataB = Filters.applyB(allData);
     window.__hectisFiltered = filteredData;
     renderAll();
   }
@@ -72,9 +78,13 @@ const App = (() => {
 
   // ── Overview ─────────────────────────────────────────────
   function renderOverview() {
-    const data  = filteredData;
-    const dataB = filteredDataB;
-    const comparing = Filters.isComparing() && dataB && dataB.length > 0;
+    const data = filteredData;
+    const compPeriods = typeof Compare !== 'undefined' && Compare.hasPeriods()
+      ? Compare.applyAll(allData, Filters.getState())
+      : [];
+    const comparing = compPeriods.length > 0 && compPeriods.some(p => p.data.length > 0);
+    // For KPI delta: use first comparison period as "B"
+    const dataB = compPeriods.length > 0 ? compPeriods[0].data : null;
 
     if (!data.length) {
       ['kpi-total','kpi-los','kpi-block-rate','kpi-worst'].forEach(id => setKPI(id,'—',''));
@@ -151,19 +161,22 @@ const App = (() => {
         sB ? _delta(vA, vB, false) : null);
     });
 
-    // Charts — year-over-year overlay
-    Charts.renderLosTrend('chart-los-trend', allData, filteredData, filteredDataB);
+    // Charts — year-over-year overlay or comparison
+    Charts.renderLosTrend('chart-los-trend', allData, filteredData, compPeriods);
     Charts.renderSegmentBreakdown('chart-segments', filteredData);
 
-    // Show/hide compare labels
-    const labelA = document.getElementById('compare-label-a');
-    const labelB = document.getElementById('compare-label-b');
-    if (labelA) labelA.style.display = comparing ? 'inline' : 'none';
-    if (labelB) labelB.style.display = comparing ? 'inline' : 'none';
-    if (comparing) {
-      const fState = Filters.getState();
-      if (labelA) labelA.textContent = `Period A: ${fState.dateFrom} → ${fState.dateTo}`;
-      if (labelB) labelB.textContent = `Period B: ${fState.dateFromB} → ${fState.dateToB}`;
+    // Update comparison period labels
+    const labelsEl = document.getElementById('compare-period-labels');
+    if (labelsEl) {
+      if (comparing) {
+        labelsEl.innerHTML = compPeriods
+          .filter(p => p.data.length > 0)
+          .map(p => `<span class="compare-label-badge" style="border-color:${p.color};color:${p.color}">Period ${p.label}: ${p.dateFrom} → ${p.dateTo} (${p.data.length.toLocaleString()})</span>`)
+          .join('');
+        labelsEl.style.display = 'flex';
+      } else {
+        labelsEl.style.display = 'none';
+      }
     }
   }
 

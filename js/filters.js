@@ -11,10 +11,7 @@ const Filters = (() => {
     disposals:    [],    // multi-select array
     triage:       null,  // single-select
     traumas:      [],    // multi-select array
-    // Comparison period B
-    compareTo:    false,
-    dateFromB:    null,
-    dateToB:      null,
+
   };
 
   let onChangeCallback = null;
@@ -33,11 +30,7 @@ const Filters = (() => {
     return _applyState(data, state);
   }
 
-  // ── Apply comparison period B filters ───────────────────
-  function applyB(data) {
-    if (!state.compareTo || !state.dateFromB || !state.dateToB) return null;
-    return _applyState(data, { ...state, dateFrom: state.dateFromB, dateTo: state.dateToB });
-  }
+  function applyB(data) { return null; } // Legacy - use Compare module
 
   function _applyState(data, s) {
     return data.filter(r => {
@@ -100,12 +93,46 @@ const Filters = (() => {
       wrapper.appendChild(list);
     }
 
-    list.innerHTML = values.map(v => `
+    const allChecked = values.length > 0 && values.every(v => selected.includes(v));
+    list.innerHTML = `
+      <label class="multiselect-item multiselect-select-all ${allChecked ? 'checked' : ''}">
+        <input type="checkbox" class="select-all-cb" ${allChecked ? 'checked' : ''}>
+        <span style="font-weight:600;color:var(--text)">Select all</span>
+      </label>
+      <div style="height:1px;background:var(--border);margin:0.25rem 0"></div>
+    ` + values.map(v => `
       <label class="multiselect-item ${selected.includes(v) ? 'checked' : ''}">
         <input type="checkbox" value="${v}" ${selected.includes(v) ? 'checked' : ''}>
         <span>${labelFn(v)}</span>
       </label>
     `).join('');
+
+    // Wire Select All checkbox
+    const selectAllCb = list.querySelector('.select-all-cb');
+    if (selectAllCb) {
+      selectAllCb.addEventListener('change', () => {
+        const arr = wrapperId.includes('disposal') ? state.disposals : state.traumas;
+        arr.length = 0;
+        list.querySelectorAll('input[type=checkbox]:not(.select-all-cb)').forEach(cb => {
+          cb.checked = selectAllCb.checked;
+          const item = cb.closest('.multiselect-item');
+          if (selectAllCb.checked) {
+            arr.push(cb.value);
+            item.classList.add('checked');
+          } else {
+            item.classList.remove('checked');
+          }
+        });
+        selectAllCb.closest('.multiselect-item').classList.toggle('checked', selectAllCb.checked);
+        const trigger = document.getElementById(triggerId);
+        if (trigger) {
+          trigger.textContent = arr.length === 0 ? placeholder
+            : arr.length === values.length ? 'All selected'
+            : `${arr.length} selected`;
+        }
+        if (onChangeCallback) onChangeCallback();
+      });
+    }
 
     // Wire checkboxes
     list.querySelectorAll('input[type=checkbox]').forEach(cb => {
@@ -194,28 +221,7 @@ const Filters = (() => {
       });
     });
 
-    // Comparison toggle
-    const compareToggle = document.getElementById('btn-compare-toggle');
-    if (compareToggle) {
-      compareToggle.addEventListener('click', () => {
-        state.compareTo = !state.compareTo;
-        compareToggle.classList.toggle('active', state.compareTo);
-        const comparePanel = document.getElementById('compare-period-panel');
-        if (comparePanel) comparePanel.style.display = state.compareTo ? 'flex' : 'none';
-        if (onChangeCallback) onChangeCallback();
-      });
-    }
-
-    // Date range B
-    ['filter-date-from-b','filter-date-to-b'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('change', () => {
-        state.dateFromB = document.getElementById('filter-date-from-b')?.value || null;
-        state.dateToB   = document.getElementById('filter-date-to-b')?.value   || null;
-        if (onChangeCallback) onChangeCallback();
-      });
-    });
+    // Compare toggle now handled by Compare module
 
     // Reset
     const resetBtn = document.getElementById('btn-reset-filters');
@@ -229,9 +235,7 @@ const Filters = (() => {
     state.traumas   = [];
     state.dateFrom  = null;
     state.dateTo    = null;
-    state.compareTo = false;
-    state.dateFromB = null;
-    state.dateToB   = null;
+
 
     document.getElementById('filter-triage') && (document.getElementById('filter-triage').value = '');
     ['filter-date-from','filter-date-to','filter-date-from-b','filter-date-to-b'].forEach(id => {
@@ -260,7 +264,7 @@ const Filters = (() => {
   }
 
   function getState() { return { ...state }; }
-  function isComparing() { return state.compareTo && state.dateFromB && state.dateToB; }
+  function isComparing() { return typeof Compare !== 'undefined' && Compare.hasPeriods(); }
 
   return { apply, applyB, populate, bind, reset, getState, isComparing, isValidTrauma };
 
