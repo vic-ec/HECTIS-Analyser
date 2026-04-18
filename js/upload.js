@@ -39,7 +39,9 @@ const Upload = (() => {
           const wb = XLSX.read(data, { type: 'array', cellDates: true });
           const sheetName = wb.SheetNames[0];
           const ws = wb.Sheets[sheetName];
-          const rows = XLSX.utils.sheet_to_json(ws, { raw: false, dateNF: 'yyyy-mm-dd hh:mm:ss' });
+          // defval:'' ensures columns with all-empty cells are preserved in output
+          // without this, SheetJS silently drops fully-empty columns
+          const rows = XLSX.utils.sheet_to_json(ws, { raw: false, dateNF: 'yyyy-mm-dd hh:mm:ss', defval: '' });
 
           if (rows.length === 0) {
             return reject(new Error('File appears to be empty'));
