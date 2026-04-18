@@ -34,11 +34,8 @@ const DB = (() => {
       const res = await fetch(url, {
         headers: { ...headers, 'Prefer': 'count=exact', 'Range': '0-0' }
       });
-      const count = res.headers.get('content-range');
-      if (count) {
-        const total = count.split('/')[1];
-        return total === '*' ? 0 : parseInt(total);
-      }
+      const cr = res.headers.get('content-range');
+      if (cr) { const t = cr.split('/')[1]; return t === '*' ? 0 : parseInt(t); }
       return 0;
     } catch { return 0; }
   }
@@ -46,9 +43,7 @@ const DB = (() => {
   // ── Fetch All Records (paginated) ────────────────────────
   async function fetchAll(filters = {}, onProgress = null) {
     const PAGE_SIZE = 1000;
-    let all  = [];
-    let from = 0;
-    let total = null;
+    let all = [], from = 0, total = null;
 
     while (true) {
       let url = `${SUPABASE_URL}/rest/v1/${TABLE}?select=*`;
@@ -56,24 +51,16 @@ const DB = (() => {
       url += `&order=arrival_time.asc`;
 
       const res = await fetch(url, {
-        headers: {
-          ...headers,
-          'Prefer': 'count=exact',
-          'Range': `${from}-${from + PAGE_SIZE - 1}`
-        }
+        headers: { ...headers, 'Prefer': 'count=exact', 'Range': `${from}-${from + PAGE_SIZE - 1}` }
       });
 
       if (!res.ok) throw new Error(`DB fetch failed: ${res.status}`);
-
       const data = await res.json();
       all = all.concat(data);
 
       if (total === null) {
         const cr = res.headers.get('content-range');
-        if (cr) {
-          const t = cr.split('/')[1];
-          total = t === '*' ? null : parseInt(t);
-        }
+        if (cr) { const t = cr.split('/')[1]; total = t === '*' ? null : parseInt(t); }
       }
 
       if (onProgress && total) onProgress(all.length, total);
@@ -84,51 +71,53 @@ const DB = (() => {
     return all;
   }
 
-  // ── Insert Rows (ON CONFLICT DO NOTHING via upsert) ──────
-  // Uses the correct PostgREST upsert syntax to silently skip
-  // duplicates on our (arrival_time, triage_time, consultation_time) index.
+  // ── Insert Rows ──────────────────────────────────────────
+  // Splits rows into three buckets based on NULL pattern,
+  // each matching one of the three partial unique indexes.
+  // Falls back to individual inserts if chunk upsert fails.
   async function insertRows(rows) {
-    if (rows.length === 0) return { inserted: 0, skipped: 0, errors: [] };
+    if (!rows.length) return { inserted: 0, skipped: 0, errors: [] };
 
-    const CHUNK = 100;
-    let inserted = 0;
-    let skipped  = 0;
+    // Bucket rows by which index applies
+    const withBoth   = rows.filter(r => r.triage_time       && r.consultation_time);
+    const nullTriage = rows.filter(r => !r.triage_time      && r.consultation_time);
+    const nullBoth   = rows.filter(r => !r.triage_time      && !r.consultation_time);
+
+    let inserted = 0, skipped = 0;
     const errors = [];
 
-    for (let i = 0; i < rows.length; i += CHUNK) {
-      const chunk = rows.slice(i, i + CHUNK);
-      try {
-        // PostgREST upsert: POST with ?on_conflict= query param
-        // This maps to INSERT ... ON CONFLICT DO NOTHING
-        const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=arrival_time,triage_time,consultation_time`;
+    const runBucket = async (bucket, conflictCols) => {
+      const CHUNK = 100;
+      for (let i = 0; i < bucket.length; i += CHUNK) {
+        const chunk = bucket.slice(i, i + CHUNK);
+        const url   = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=${conflictCols}`;
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { ...headers, 'Prefer': 'resolution=ignore-duplicates,return=representation' },
+            body: JSON.stringify(chunk)
+          });
 
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            ...headers,
-            'Prefer': 'resolution=ignore-duplicates,return=representation'
-          },
-          body: JSON.stringify(chunk)
-        });
+          if (!res.ok) {
+            let msg = `HTTP ${res.status}`;
+            try { const e = await res.json(); msg = e.message || e.details || msg; } catch {}
+            errors.push(`Chunk ${Math.floor(i/CHUNK)+1} (${conflictCols}): ${msg}`);
+            continue;
+          }
 
-        if (!res.ok) {
-          let msg = `HTTP ${res.status}`;
-          try {
-            const err = await res.json();
-            msg = err.message || err.details || msg;
-          } catch {}
-          errors.push(`Chunk ${Math.floor(i / CHUNK) + 1}: ${msg}`);
-          continue;
+          const result = await res.json();
+          inserted += result.length;
+          skipped  += chunk.length - result.length;
+
+        } catch (e) {
+          errors.push(`Chunk ${Math.floor(i/CHUNK)+1}: ${e.message}`);
         }
-
-        const result = await res.json();
-        inserted += result.length;
-        skipped  += chunk.length - result.length;
-
-      } catch (e) {
-        errors.push(`Chunk ${Math.floor(i / CHUNK) + 1}: ${e.message}`);
       }
-    }
+    };
+
+    await runBucket(withBoth,   'arrival_time,triage_time,consultation_time');
+    await runBucket(nullTriage, 'arrival_time,consultation_time');
+    await runBucket(nullBoth,   'arrival_time');
 
     return { inserted, skipped, errors };
   }
@@ -163,7 +152,7 @@ const DB = (() => {
     return s;
   }
 
-  // ── Delete by source file (for re-uploads) ───────────────
+  // ── Delete by source file ────────────────────────────────
   async function deleteBySourceFile(filename) {
     try {
       const res = await fetch(
@@ -174,9 +163,6 @@ const DB = (() => {
     } catch { return false; }
   }
 
-  return {
-    ping, getCount, fetchAll, insertRows,
-    getAvailableMonths, deleteBySourceFile
-  };
+  return { ping, getCount, fetchAll, insertRows, getAvailableMonths, deleteBySourceFile };
 
 })();
