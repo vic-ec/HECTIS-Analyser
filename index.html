@@ -81,12 +81,12 @@
       </div>
       <div class="filter-actions">
         <button class="btn btn-ghost" id="btn-reset-filters">Reset</button>
-        <button class="btn btn-secondary" id="btn-compare-toggle" onclick="document.getElementById('compare-panel').style.display=document.getElementById('compare-panel').style.display==='none'?'':'none'">⇄ Compare</button>
+        <button class="btn btn-secondary" id="btn-compare-toggle">⇄ Compare</button>
         <button class="btn btn-secondary" id="btn-generate-report">🖨 Report</button>
       </div>
     </div>
     <!-- Multi-period comparison panel -->
-    <div id="compare-panel" style="margin-bottom:1rem">
+    <div id="compare-panel" style="display:none;margin-bottom:0.75rem">
       <div id="compare-periods-container"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem">
         <button class="btn btn-ghost" id="btn-add-period" style="font-size:0.78rem">+ Add comparison period</button>
@@ -219,6 +219,10 @@
           </div>
           <div style="margin-top:1rem;padding:.75rem;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border)">
             <p style="font-size:.75rem;color:var(--text-muted)"><strong style="color:var(--yellow)">Tip:</strong> Include month and year in the filename (e.g. <span style="color:var(--accent)">Disposals_March_2026.xlsx</span>) for accurate trend analysis.</p>
+          </div>
+          <div style="margin-top:1rem;padding:.75rem;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border)">
+            <p style="font-size:.75rem;color:var(--text-muted);margin-bottom:.5rem"><strong style="color:var(--blue)">Cache:</strong> Data is cached locally for fast repeat loads. If something looks stale, clear the cache to force a full refresh.</p>
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="DB.invalidateCache().then(()=>{ Utils.toast('Cache cleared — reload the page to fetch fresh data','info',4000); })">↺ Clear local cache</button>
           </div>
         </div>
       </div>
