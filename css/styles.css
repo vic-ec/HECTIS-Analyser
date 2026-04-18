@@ -4,7 +4,7 @@
    Victoria Hospital Wynberg — Emergency Centre
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
@@ -38,7 +38,7 @@
   --radius-lg:    12px;
   --transition:   0.18s ease;
 
-  --font-display: 'Syne', sans-serif;
+  --font-display: 'DM Serif Display', serif;
   --font-body:    'DM Sans', sans-serif;
   --font-mono:    'DM Mono', monospace;
 }
@@ -900,4 +900,88 @@ tr:last-child td { border-bottom: none; }
 .delta-neutral {
   background: var(--surface-2);
   color: var(--text-muted);
+}
+
+/* ── Multi-period comparison ─────────────────────────────── */
+#compare-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.5rem;
+}
+
+.compare-period-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+  animation: fadeIn 0.2s ease;
+}
+
+.compare-period-row:last-of-type {
+  border-bottom: none;
+}
+
+.compare-period-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius);
+  border: 1px solid;
+  white-space: nowrap;
+  align-self: flex-end;
+  margin-bottom: 0.45rem;
+}
+
+.compare-period-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: flex-end;
+  margin-bottom: 0.35rem;
+}
+
+.compare-reset-btn {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.35rem 0.65rem;
+}
+
+.compare-delete-btn {
+  font-size: 0.75rem;
+  color: var(--red);
+  padding: 0.35rem 0.65rem;
+  opacity: 0.7;
+}
+
+.compare-delete-btn:hover { opacity: 1; }
+
+.compare-label-badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  border: 1px solid;
+  background: transparent;
+}
+
+#btn-add-period {
+  color: var(--accent);
+  border: 1px dashed var(--accent-glow);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.9rem;
+}
+
+#btn-add-period:hover {
+  background: var(--accent-soft);
+}
+
+#btn-add-period:disabled {
+  color: var(--text-dim);
+  border-color: var(--border);
+  cursor: not-allowed;
 }
