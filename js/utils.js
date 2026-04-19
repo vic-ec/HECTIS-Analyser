@@ -161,6 +161,7 @@ const Utils = (() => {
   }
 
   function r1(n) { return (n === null || n === undefined || isNaN(n)) ? null : Math.round(n * 10) / 10; }
+  function r2(n) { return (n === null || n === undefined || isNaN(n)) ? null : Math.round(n * 100) / 100; }
   function r0(n) { return (n === null || n === undefined || isNaN(n)) ? null : Math.round(n); }
 
   function debounce(fn, ms) {
@@ -182,7 +183,7 @@ const Utils = (() => {
     percentile, median, formatDate,
     isReferral, shortDiscipline, disciplineColor,
     triageBadgeClass, groupBy, unique, dowName,
-    r0, r1, debounce, toast,
+    r0, r1, r2, debounce, toast,
     DOW, DISCIPLINE_SHORT, DISCIPLINE_COLORS
   };
 })();

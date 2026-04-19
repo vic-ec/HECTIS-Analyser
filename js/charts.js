@@ -339,7 +339,8 @@ const Charts = (() => {
       label: s.label,
       data: keys.map(k => {
         const vals = byMonth[k].map(r => r[s.key]).filter(v => v !== null && v >= 0);
-        return vals.length >= 3 ? Utils.r0(Utils.toHours(Utils.median(vals))) : null;
+        // Use r2 for precision - segments like Arrival→Triage are often < 1h
+        return vals.length >= 3 ? Utils.r2(Utils.toHours(Utils.median(vals))) : null;
       }),
       backgroundColor: s.color + 'bb',
       borderColor: s.color,
@@ -356,7 +357,7 @@ const Charts = (() => {
           tooltip: {
             ...baseOptions.plugins.tooltip,
             callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + ' hrs' : 'N/A'}`
+              label: ctx => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + 'h' : 'N/A'}`
             }
           }
         },
@@ -366,6 +367,10 @@ const Charts = (() => {
           y: {
             ...baseOptions.scales.y,
             stacked: true,
+            ticks: {
+              ...baseOptions.scales.y.ticks,
+              callback: v => v + 'h'
+            },
             title: { display: true, text: 'Median hours', color: '#7d8590', font: { family: 'DM Mono', size: 10 } }
           }
         }
