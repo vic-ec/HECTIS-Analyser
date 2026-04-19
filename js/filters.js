@@ -107,7 +107,7 @@ const Filters = (() => {
       const hintEl = document.getElementById('date-range-hint');
       if (hintEl) {
         const fmt = d => new Date(d).toLocaleDateString('en-ZA', { day:'2-digit', month:'short', year:'numeric' });
-        hintEl.textContent = `Data: ${fmt(minDate)} – ${fmt(maxDate)}`;
+        hintEl.textContent = `Available data: ${fmt(minDate)} – ${fmt(maxDate)}`;
       }
     }
   }
@@ -139,10 +139,11 @@ const Filters = (() => {
 
     // Show Select All as checked when all OR none are selected (default state)
     const allChecked = selected.length === 0 || (values.length > 0 && values.every(v => selected.includes(v)));
+    // Label for Select All matches the placeholder (All Disposals / All Trauma)
     list.innerHTML = `
       <label class="multiselect-item multiselect-select-all ${allChecked ? 'checked' : ''}">
         <input type="checkbox" class="select-all-cb" ${allChecked ? 'checked' : ''}>
-        <span style="font-weight:600;color:var(--text)">Select all</span>
+        <span class="select-all-label" style="font-weight:600;color:var(--text)">${placeholder}</span>
       </label>
       <div style="height:1px;background:var(--border);margin:0.25rem 0"></div>
     ` + values.map(v => `

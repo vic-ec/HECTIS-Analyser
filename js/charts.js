@@ -10,7 +10,8 @@ const Charts = (() => {
   // ── Default Chart Options ────────────────────────────────
   const baseOptions = {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
+    resizeDelay: 0,
     plugins: {
       legend: {
         labels: {
@@ -207,7 +208,7 @@ const Charts = (() => {
     const data = filteredData || allData;
     const MN = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const baseOpts = {
-      responsive: true, maintainAspectRatio: true,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { labels: { color:'#7d8590', font:{family:'DM Mono',size:11}, boxWidth:12, padding:16 } },
         tooltip: { backgroundColor:'#21262d', borderColor:'#30363d', borderWidth:1, titleColor:'#e6edf3', bodyColor:'#7d8590', titleFont:{family:'DM Mono',size:11}, bodyFont:{family:'DM Mono',size:11}, padding:10, cornerRadius:6, callbacks:{ label: ctx => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw + ' hrs' : 'N/A'}` } }
@@ -376,6 +377,8 @@ const Charts = (() => {
   function renderHeatmap(containerId, data, discipline = null) {
     const container = document.getElementById(containerId);
     if (!container) return;
+    // Clear and set responsive grid styling
+    container.style.overflowX = 'auto';
 
     const filtered = discipline
       ? data.filter(r => r.disposal === discipline)
@@ -403,7 +406,7 @@ const Charts = (() => {
     const maxVal = allVals.length ? Math.max(...allVals) : 1;
 
     // Build HTML heatmap
-    let html = '<div class="heatmap-grid">';
+    let html = '<div class="heatmap-grid" style="display:grid;grid-template-columns:50px repeat(24,1fr);gap:2px;min-width:600px">';
     // Header row
     html += '<div class="heatmap-label"></div>';
     HOURS.forEach(h => {

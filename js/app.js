@@ -380,4 +380,23 @@ const App = (() => {
   return { init, loadData };
 })();
 
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded', () => {
+  App.init();
+
+  // Force Chart.js to redraw when window resizes
+  // Chart.js with maintainAspectRatio:false needs explicit resize trigger
+  let resizeTimer;
+  const resizeObserver = new ResizeObserver(() => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      // Resize all active Chart.js instances
+      Object.values(Chart.instances || {}).forEach(chart => {
+        try { chart.resize(); } catch(e) {}
+      });
+    }, 100);
+  });
+
+  // Observe the main content area
+  const main = document.getElementById('main');
+  if (main) resizeObserver.observe(main);
+});
