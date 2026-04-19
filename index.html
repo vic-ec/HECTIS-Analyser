@@ -69,8 +69,8 @@
       <div class="filter-group">
         <label class="filter-label">To</label>
         <input type="date" id="filter-date-to" class="filter-input">
-        <div class="date-range-hint" id="date-range-hint"></div>
       </div>
+      <div id="date-range-hint" style="display:flex;align-items:center;font-size:0.65rem;font-family:var(--font-mono);color:var(--text-dim);white-space:nowrap;padding-bottom:0.45rem"></div>
       <div class="filter-group">
         <label class="filter-label">Disposals</label>
         <div class="multiselect-wrap" id="filter-disposal-wrap">
@@ -93,14 +93,13 @@
       </div>
     </div>
     <!-- Multi-period comparison panel -->
-    <div id="compare-panel" style="display:none;margin-bottom:0.75rem">
+    <div id="compare-panel" style="display:none">
       <div id="compare-periods-container"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem">
         <button class="btn btn-ghost" id="btn-add-period" style="font-size:0.78rem">+ Add comparison period</button>
         <button class="btn btn-ghost" id="btn-clear-periods" onclick="Compare.clearAll()" style="font-size:0.72rem;color:var(--text-dim)">Clear all</button>
       </div>
       <div id="compare-period-labels" style="display:none;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem"></div>
-    </div>
     </div>
 
     <!-- OVERVIEW -->
