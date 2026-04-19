@@ -66,6 +66,15 @@ const Trauma = (() => {
     });
   }
 
+  // ── Trauma type abbreviation map ────────────────────────
+  const TRAUMA_ABBREV = {
+    'Non Accidental Injury(Paed)':   'Paed NAI',
+    'Non Accidental Injury (Paed)':  'Paed NAI',
+    'Gender Based Violence':          'GBV',
+    'Gender-Based Violence':          'GBV',
+  };
+  function traumaLabel(t) { return TRAUMA_ABBREV[t] || t; }
+
   // ── Trauma type breakdown bar chart ─────────────────────
   function renderTraumaTypes(id, data) {
     const canvas = document.getElementById(id);
@@ -87,7 +96,7 @@ const Trauma = (() => {
         })(),
       }))
       .sort((a, b) => b.n - a.n)
-      .slice(0, 12); // top 12 types
+      .slice(0, 20); // top 20 types
 
     const colors = entries.map((_, i) => {
       const hues = [210, 195, 160, 45, 25, 0, 280, 330, 120, 240, 60, 300];
@@ -97,7 +106,7 @@ const Trauma = (() => {
     new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: entries.map(e => e.type),
+        labels: entries.map(e => traumaLabel(e.type)),
         datasets: [{
           label: 'Patients',
           data: entries.map(e => e.n),
@@ -339,7 +348,7 @@ const Trauma = (() => {
           const bc = r.blockRate > 70 ? 'var(--red)' : r.blockRate > 40 ? 'var(--orange)' : 'var(--green)';
           return `
             <div class="discipline-row" style="grid-template-columns:1.8fr 0.6fr 1fr 1fr 1fr">
-              <span class="discipline-name">${r.type}</span>
+              <span class="discipline-name">${TRAUMA_ABBREV[r.type] || r.type}</span>
               <span class="discipline-stat">${r.n}</span>
               <span class="discipline-stat">${Utils.formatMinutes(r.medDte, true)}</span>
               <span class="discipline-stat">${Utils.formatMinutes(r.p90Dte, true)}</span>

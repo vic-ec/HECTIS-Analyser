@@ -22,7 +22,14 @@ const App = (() => {
           return;
         }
         if (typeof Report === 'undefined') {
-          Utils.toast('Report module not loaded — try refreshing the page', 'warn');
+          // Retry once after short delay in case of load order issue
+          setTimeout(() => {
+            if (typeof Report !== 'undefined') {
+              Report.generate(filteredData);
+            } else {
+              Utils.toast('Report unavailable — please do a hard refresh (Ctrl+Shift+R)', 'warn');
+            }
+          }, 200);
           return;
         }
         Report.generate(filteredData);
@@ -37,6 +44,7 @@ const App = (() => {
       compareToggle.addEventListener('click', () => {
         const isOpen = comparePanel.style.display !== 'none';
         comparePanel.style.display = isOpen ? 'none' : 'block';
+        comparePanel.style.marginBottom = isOpen ? '0' : '0.75rem';
         compareToggle.classList.toggle('active', !isOpen);
       });
     }
