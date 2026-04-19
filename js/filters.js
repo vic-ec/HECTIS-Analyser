@@ -34,9 +34,10 @@ const Filters = (() => {
 
   function _applyState(data, s) {
     return data.filter(r => {
-      if (s.disposals.length && !s.disposals.includes(r.disposal)) return false;
-      if (s.triage      && r.triage_category !== s.triage) return false;
-      if (s.traumas.length && !s.traumas.includes(r.trauma)) return false;
+      // Empty array = all selected (no filter applied)
+      if (s.disposals.length > 0 && !s.disposals.includes(r.disposal)) return false;
+      if (s.triage && r.triage_category !== s.triage) return false;
+      if (s.traumas.length > 0 && !s.traumas.includes(r.trauma)) return false;
 
       if (s.dateFrom) {
         const d = new Date(r.arrival_time);
@@ -56,17 +57,54 @@ const Filters = (() => {
     const triages   = ['Red','Orange','Yellow','Green'].filter(t => data.some(r => r.triage_category === t));
     const traumas   = Utils.unique(data.map(r => r.trauma).filter(v => v && isValidTrauma(v)));
 
-    _buildMultiSelect('filter-disposal-wrap', 'filter-disposal', disposals, state.disposals, 'All Disposals', v => Utils.shortDiscipline(v));
-    _setOptions('filter-triage', triages, 'All Triage');
-    _buildMultiSelect('filter-trauma-wrap', 'filter-trauma', traumas, state.traumas, 'All Trauma', v => v);
+    // Pre-select ALL items on first load
+    if (state.disposals.length === 0 && disposals.length > 0) state.disposals.push(...disposals);
+    if (state.traumas.length === 0   && traumas.length > 0)   state.traumas.push(...traumas);
 
-    // Date range from data
+    _buildMultiSelect('filter-disposal-wrap', 'filter-disposal', disposals, state.disposals, 'Please select…', v => Utils.shortDiscipline(v));
+    _setOptions('filter-triage', triages, 'All Triage');
+    _buildMultiSelect('filter-trauma-wrap', 'filter-trauma', traumas, state.traumas, 'Please select…', v => v);
+
+    // Date range from data — constrain all date pickers to actual data range
     const dates = data.map(r => r.arrival_time).filter(Boolean).sort();
     if (dates.length) {
+      // Ensure strict YYYY-MM-DD format for HTML date input min/max
+      const toYMD = s => {
+        const d = new Date(s);
+        if (isNaN(d)) return s.slice(0, 10);
+        return d.toISOString().slice(0, 10);
+      };
+      const minDate = toYMD(dates[0]);
+      const maxDate = toYMD(dates[dates.length - 1]);
+
+      // Store globally so compare.js can use them too
+      window.__hectisMinDate = minDate;
+      window.__hectisMaxDate = maxDate;
+
+      // Main filter date pickers
       const fromEl = document.getElementById('filter-date-from');
       const toEl   = document.getElementById('filter-date-to');
-      if (fromEl && !fromEl.value) fromEl.value = dates[0].slice(0, 10);
-      if (toEl   && !toEl.value)   toEl.value   = dates[dates.length - 1].slice(0, 10);
+      if (fromEl) {
+        fromEl.min = minDate;
+        fromEl.max = maxDate;
+        if (!fromEl.value) fromEl.value = minDate;
+      }
+      if (toEl) {
+        toEl.min = minDate;
+        toEl.max = maxDate;
+        if (!toEl.value) toEl.value = maxDate;
+      }
+
+      // Update state to match
+      if (!state.dateFrom) state.dateFrom = minDate;
+      if (!state.dateTo)   state.dateTo   = maxDate;
+
+      // Show data range hint
+      const hintEl = document.getElementById('date-range-hint');
+      if (hintEl) {
+        const fmt = d => new Date(d).toLocaleDateString('en-ZA', { day:'2-digit', month:'short', year:'numeric' });
+        hintEl.textContent = `Data: ${fmt(minDate)} – ${fmt(maxDate)}`;
+      }
     }
   }
 
@@ -126,7 +164,7 @@ const Filters = (() => {
         selectAllCb.closest('.multiselect-item').classList.toggle('checked', selectAllCb.checked);
         const trigger = document.getElementById(triggerId);
         if (trigger) {
-          trigger.textContent = arr.length === 0 ? placeholder
+          trigger.textContent = arr.length === 0 ? 'Please select…'
             : arr.length === values.length ? 'All selected'
             : `${arr.length} selected`;
         }
@@ -150,7 +188,9 @@ const Filters = (() => {
         // Update trigger label
         const trigger = document.getElementById(triggerId);
         if (trigger) {
-          trigger.textContent = arr.length === 0 ? placeholder
+          const allVals = list.querySelectorAll('input[type=checkbox]:not(.select-all-cb)');
+          trigger.textContent = arr.length === 0 ? 'Please select…'
+            : arr.length === allVals.length ? 'All selected'
             : arr.length === 1 ? labelFn(arr[0])
             : `${arr.length} selected`;
         }
@@ -233,25 +273,33 @@ const Filters = (() => {
     state.disposals = [];
     state.triage    = null;
     state.traumas   = [];
-    state.dateFrom  = null;
-    state.dateTo    = null;
+    // Reset dates to full data range (not null — null means no filter but empty pickers look broken)
+    state.dateFrom = window.__hectisMinDate || null;
+    state.dateTo   = window.__hectisMaxDate || null;
 
 
     document.getElementById('filter-triage') && (document.getElementById('filter-triage').value = '');
-    ['filter-date-from','filter-date-to','filter-date-from-b','filter-date-to-b'].forEach(id => {
+    // Restore date pickers to full data range on reset
+    const fromEl = document.getElementById('filter-date-from');
+    const toEl   = document.getElementById('filter-date-to');
+    if (fromEl && window.__hectisMinDate) fromEl.value = window.__hectisMinDate;
+    if (toEl   && window.__hectisMaxDate) toEl.value   = window.__hectisMaxDate;
+    // Clear comparison period date pickers
+    ['filter-date-from-b','filter-date-to-b'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
 
-    // Reset multi-select checkboxes
+    // Reset multi-select — clear arrays so populate() re-selects all
+    state.disposals = [];
+    state.traumas   = [];
     document.querySelectorAll('.multiselect-item.checked').forEach(item => {
       item.classList.remove('checked');
       const cb = item.querySelector('input');
       if (cb) cb.checked = false;
     });
     document.querySelectorAll('.multiselect-trigger').forEach(t => {
-      const placeholder = t.dataset.placeholder || 'All';
-      t.textContent = placeholder;
+      t.textContent = 'Please select…';
     });
 
     // Hide compare panel

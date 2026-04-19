@@ -16,38 +16,25 @@ const App = (() => {
     const reportBtn = document.getElementById('btn-generate-report');
     if (reportBtn) {
       reportBtn.addEventListener('click', () => {
-        // Use live reference to filteredData, not the window snapshot
         if (!filteredData || !filteredData.length) {
-          Utils.toast('No data loaded yet — please wait for data to finish loading', 'warn');
+          Utils.toast('No data loaded yet', 'warn');
           return;
         }
-        if (typeof Report === 'undefined') {
-          // Retry once after short delay in case of load order issue
-          setTimeout(() => {
-            if (typeof Report !== 'undefined') {
-              Report.generate(filteredData);
-            } else {
-              Utils.toast('Report unavailable — please do a hard refresh (Ctrl+Shift+R)', 'warn');
-            }
-          }, 200);
-          return;
+        // Report is always defined if report.js is loaded
+        try {
+          Report.generate(filteredData);
+        } catch(e) {
+          console.error('Report error:', e);
+          Utils.toast('Report error: ' + e.message, 'error');
         }
-        Report.generate(filteredData);
       });
     }
-    if (typeof Compare !== 'undefined') Compare.init(onFilterChange);
+    if (typeof Compare !== 'undefined') Compare.init(
+      () => allData,   // getter so Compare always has fresh data
+      onFilterChange
+    );
 
-    // Wire Compare toggle button
-    const compareToggle = document.getElementById('btn-compare-toggle');
-    const comparePanel  = document.getElementById('compare-panel');
-    if (compareToggle && comparePanel) {
-      compareToggle.addEventListener('click', () => {
-        const isOpen = comparePanel.style.display !== 'none';
-        comparePanel.style.display = isOpen ? 'none' : 'block';
-        comparePanel.style.marginBottom = isOpen ? '0' : '0.75rem';
-        compareToggle.classList.toggle('active', !isOpen);
-      });
-    }
+
     await checkConnection();
     await loadData();
   }
@@ -87,6 +74,9 @@ const App = (() => {
       Filters.populate(allData);
       filteredData  = Filters.apply(allData);
       window.__hectisFiltered = filteredData;
+
+      // Update Compare tab with fresh data
+      if (typeof Compare !== 'undefined') Compare.setData(allData);
 
       // Register background sync callback — fires if new records arrive after cache served
       window.__hectisSyncCallback = (updatedData) => {
@@ -131,12 +121,9 @@ const App = (() => {
   // ── Overview ─────────────────────────────────────────────
   function renderOverview() {
     const data = filteredData;
-    const compPeriods = typeof Compare !== 'undefined' && Compare.hasPeriods()
-      ? Compare.applyAll(allData, Filters.getState())
-      : [];
-    const comparing = compPeriods.length > 0 && compPeriods.some(p => p.data.length > 0);
-    // For KPI delta: use first comparison period as "B"
-    const dataB = compPeriods.length > 0 ? compPeriods[0].data : null;
+    const comparing = false;
+    const dataB = null;
+    const compPeriods = [];
 
     if (!data.length) {
       ['kpi-total','kpi-los','kpi-block-rate','kpi-worst'].forEach(id => setKPI(id,'—',''));
@@ -216,22 +203,10 @@ const App = (() => {
     });
 
     // Charts — year-over-year overlay or comparison
-    Charts.renderLosTrend('chart-los-trend', allData, filteredData, compPeriods);
+    Charts.renderLosTrend('chart-los-trend', allData, filteredData, null);
     Charts.renderSegmentBreakdown('chart-segments', filteredData);
 
-    // Update comparison period labels
-    const labelsEl = document.getElementById('compare-period-labels');
-    if (labelsEl) {
-      if (comparing) {
-        labelsEl.innerHTML = compPeriods
-          .filter(p => p.data.length > 0)
-          .map(p => `<span class="compare-label-badge" style="border-color:${p.color};color:${p.color}">Period ${p.label}: ${p.dateFrom} → ${p.dateTo} (${p.data.length.toLocaleString()})</span>`)
-          .join('');
-        labelsEl.style.display = 'flex';
-      } else {
-        labelsEl.style.display = 'none';
-      }
-    }
+
   }
 
   // ── Worst Discipline KPI renderer ───────────────────────
