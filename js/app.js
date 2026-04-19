@@ -60,16 +60,22 @@ const App = (() => {
     const countEl = document.getElementById('record-count');
     if (countEl) countEl.textContent = 'Loading…';
     try {
+      let servedFromCache = false;
       allData = await DB.fetchAll({}, (loaded, total) => {
         if (countEl) {
           if (loaded === total && loaded > 0) {
+            // Only show (cached) if we got data instantly (no incremental progress)
+            servedFromCache = true;
             countEl.textContent = `${loaded.toLocaleString()} records (cached)`;
           } else {
+            servedFromCache = false;
             countEl.textContent = `Loading ${loaded}/${total}…`;
           }
         }
       });
-      if (countEl) countEl.textContent = `${allData.length.toLocaleString()} records`;
+      if (countEl) countEl.textContent = servedFromCache
+        ? `${allData.length.toLocaleString()} records (cached)`
+        : `${allData.length.toLocaleString()} records`;
       Filters.populate(allData);
       filteredData  = Filters.apply(allData);
       window.__hectisFiltered = filteredData;
@@ -79,7 +85,9 @@ const App = (() => {
         allData      = updatedData;
         filteredData = Filters.apply(allData);
         window.__hectisFiltered = filteredData;
-        if (countEl) countEl.textContent = `${allData.length.toLocaleString()} records`;
+        if (countEl) countEl.textContent = servedFromCache
+        ? `${allData.length.toLocaleString()} records (cached)`
+        : `${allData.length.toLocaleString()} records`;
         Filters.populate(allData);
         setTimeout(() => renderAll(), 50);
         Utils.toast(`${(updatedData.length - allData.length + updatedData.length - updatedData.length).toLocaleString()} new records synced`, 'info', 2500);
