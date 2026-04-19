@@ -11,10 +11,19 @@ const Filters = (() => {
     disposals:    [],    // multi-select array
     triage:       null,  // single-select
     traumas:      [],    // multi-select array
+    locations:    [],    // multi-select array
 
   };
 
   let onChangeCallback = null;
+
+  // ── Validate location value ─────────────────────────────
+  function isValidLocation(v) {
+    if (!v || v === '-') return false;
+    if (/\d{1,4}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(v)) return false;
+    if (/\d{1,2}:\d{2}/.test(v)) return false;
+    return /[A-Za-z]/.test(v);
+  }
 
   // ── Validate trauma value ────────────────────────────────
   function isValidTrauma(v) {
@@ -35,9 +44,10 @@ const Filters = (() => {
   function _applyState(data, s) {
     return data.filter(r => {
       // Empty array = all selected (no filter applied)
-      if (s.disposals.length > 0 && !s.disposals.includes(r.disposal)) return false;
-      if (s.triage && r.triage_category !== s.triage) return false;
-      if (s.traumas.length > 0 && !s.traumas.includes(r.trauma)) return false;
+      if (s.disposals.length > 0  && !s.disposals.includes(r.disposal)) return false;
+      if (s.triage               && r.triage_category !== s.triage) return false;
+      if (s.traumas.length > 0   && !s.traumas.includes(r.trauma)) return false;
+      if (s.locations.length > 0 && !s.locations.includes(r.location)) return false;
 
       if (s.dateFrom) {
         const d = new Date(r.arrival_time);
@@ -249,6 +259,18 @@ const Filters = (() => {
     onChangeCallback = onChange;
     _setupMultiSelectToggles();
 
+    // Location multi-select toggle
+    document.querySelectorAll('#filter-location-wrap .multiselect-trigger').forEach(t => {
+      t.addEventListener('click', e => {
+        e.stopPropagation();
+        const wrap = t.closest('.multiselect-wrap');
+        const list = wrap.querySelector('.multiselect-list');
+        const isOpen = list.classList.contains('open');
+        document.querySelectorAll('.multiselect-list.open').forEach(l => l.classList.remove('open'));
+        if (!isOpen) list.classList.add('open');
+      });
+    });
+
     // Triage single-select
     const triageEl = document.getElementById('filter-triage');
     if (triageEl) {
@@ -299,8 +321,9 @@ const Filters = (() => {
     });
 
     // Reset multi-select — clear arrays so populate() re-selects all
-    state.disposals = [];
-    state.traumas   = [];
+    state.disposals  = [];
+    state.traumas    = [];
+    state.locations  = [];
     document.querySelectorAll('.multiselect-item.checked').forEach(item => {
       item.classList.remove('checked');
       const cb = item.querySelector('input');
