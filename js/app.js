@@ -16,12 +16,30 @@ const App = (() => {
     const reportBtn = document.getElementById('btn-generate-report');
     if (reportBtn) {
       reportBtn.addEventListener('click', () => {
-        const data = window.__hectisFiltered || [];
-        if (!data.length) { Utils.toast('No data loaded yet', 'warn'); return; }
-        if (typeof Report !== 'undefined') Report.generate(data);
+        // Use live reference to filteredData, not the window snapshot
+        if (!filteredData || !filteredData.length) {
+          Utils.toast('No data loaded yet — please wait for data to finish loading', 'warn');
+          return;
+        }
+        if (typeof Report === 'undefined') {
+          Utils.toast('Report module not loaded — try refreshing the page', 'warn');
+          return;
+        }
+        Report.generate(filteredData);
       });
     }
     if (typeof Compare !== 'undefined') Compare.init(onFilterChange);
+
+    // Wire Compare toggle button
+    const compareToggle = document.getElementById('btn-compare-toggle');
+    const comparePanel  = document.getElementById('compare-panel');
+    if (compareToggle && comparePanel) {
+      compareToggle.addEventListener('click', () => {
+        const isOpen = comparePanel.style.display !== 'none';
+        comparePanel.style.display = isOpen ? 'none' : 'block';
+        compareToggle.classList.toggle('active', !isOpen);
+      });
+    }
     await checkConnection();
     await loadData();
   }
@@ -148,9 +166,9 @@ const App = (() => {
       '', comparing ? _delta(sA.n, sB.n, true) : null);
 
     renderKPIWithDelta('kpi-los',
-      sA.medLos !== null ? sA.medLos : '—',
-      sB ? (sB.medLos !== null ? sB.medLos : '—') : null,
-      'hrs median LOS',
+      sA.medLos !== null ? sA.medLos + 'h' : '—',
+      sB ? (sB.medLos !== null ? sB.medLos + 'h' : '—') : null,
+      'all patients',
       sB ? _delta(sA.medLos, sB.medLos, false) : null,
       sA.medLos > 12 ? 'alert' : sA.medLos > 6 ? 'warn' : '');
 
@@ -161,10 +179,8 @@ const App = (() => {
       sB ? _delta(sA.blockRate, sB.blockRate, false) : null,
       sA.blockRate > 70 ? 'alert' : sA.blockRate > 40 ? 'warn' : 'good');
 
-    setKPI('kpi-worst',
-      sA.worstD ? Utils.shortDiscipline(sA.worstD) : '—',
-      sA.worstM > 0 ? `median ${Utils.formatMinutes(sA.worstM,true)} boarding` : '',
-      'alert');
+    // Render Highest Bed Pressure with prominent red median time
+    _renderWorstKPI('kpi-worst', sA.worstD, sA.worstM);
 
     // Segment KPIs
     const segKeys = [
@@ -200,6 +216,23 @@ const App = (() => {
         labelsEl.style.display = 'none';
       }
     }
+  }
+
+  // ── Worst Discipline KPI renderer ───────────────────────
+  function _renderWorstKPI(id, discipline, medianMin) {
+    const card = document.getElementById(id);
+    if (!card) return;
+    const valEl  = card.querySelector('.kpi-value');
+    const unitEl = card.querySelector('.kpi-unit');
+    if (valEl)  valEl.textContent = discipline ? Utils.shortDiscipline(discipline) : '—';
+    if (unitEl) {
+      if (medianMin > 0) {
+        unitEl.innerHTML = `median <span style="color:var(--red);font-weight:600">${Utils.formatMinutes(medianMin, true)}</span> boarding`;
+      } else {
+        unitEl.textContent = '';
+      }
+    }
+    card.className = 'kpi-card alert';
   }
 
   // ── Delta calculation ────────────────────────────────────

@@ -83,8 +83,12 @@ const Utils = (() => {
     'Referred to Gynae':        'Gynae',
     'Referred to Urology':      'Urology',
     'Discharged':               'Discharged',
-    'Discharged to OPD':        'Disch. OPD',
-    'Discharged to Forensics':  'Disch. Forensics',
+    'Discharged to OPD':        'Discharged to OPD',
+    'Discharged to Forensics':  'Discharged to Forensics',
+    // Legacy aliases — old short forms stored in early uploads
+    'Disch. OPD':               'Discharged to OPD',
+    'Disch. Forensics':         'Discharged to Forensics',
+    'Disch. Forensics':         'Discharged to Forensics',
     'Absconded':                'Absconded',
     'Deferral':                 'Deferral',
     'Transfer other':           'Transfer',
@@ -92,6 +96,7 @@ const Utils = (() => {
     'Deceased (Natural)':       'Deceased',
     'Deceased (Unnatural)':     'Deceased (Unnat.)',
     'DOA (Natural)':            'DOA',
+    'Referred to ENT':          'ENT',
   };
 
   function shortDiscipline(d) {
@@ -112,6 +117,8 @@ const Utils = (() => {
     'Discharged':               '#7d8590',
     'Discharged to OPD':        '#6e7681',
     'Discharged to Forensics':  '#6e7681',
+    'Disch. OPD':               '#6e7681',
+    'Disch. Forensics':         '#6e7681',
     'Absconded':                '#484f58',
     'Deferral':                 '#484f58',
     'Transfer other':           '#8b949e',
@@ -119,6 +126,7 @@ const Utils = (() => {
     'Deceased (Natural)':       '#30363d',
     'Deceased (Unnatural)':     '#30363d',
     'DOA (Natural)':            '#30363d',
+    'Referred to ENT':          '#a0c4ff',
   };
 
   function disciplineColor(d) {
