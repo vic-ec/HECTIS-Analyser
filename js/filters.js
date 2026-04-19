@@ -75,9 +75,17 @@ const Filters = (() => {
     // Empty array = all selected = no filter applied (correct default state)
     // Do NOT pre-populate - empty means "all" in _applyState
 
-    _buildMultiSelect('filter-disposal-wrap', 'filter-disposal', disposals, state.disposals, 'Please select…', v => Utils.shortDiscipline(v));
+    _buildMultiSelect('filter-disposal-wrap', 'filter-disposal', disposals, state.disposals, 'All Disposals', v => Utils.shortDiscipline(v));
     _setOptions('filter-triage', triages, 'All Triage');
-    _buildMultiSelect('filter-trauma-wrap', 'filter-trauma', traumas, state.traumas, 'Please select…', v => v);
+    _buildMultiSelect('filter-trauma-wrap', 'filter-trauma', traumas, state.traumas, 'All Trauma', v => v);
+    if (document.getElementById('filter-location-wrap')) {
+      _buildMultiSelect('filter-location-wrap', 'filter-location', locations, state.locations, 'All Locations', v => v);
+    }
+
+    // Ensure trigger labels show placeholder when all/none selected
+    _syncTriggerLabel('filter-disposal',  state.disposals,  disposals,  'All Disposals');
+    _syncTriggerLabel('filter-trauma',    state.traumas,    traumas,    'All Trauma');
+    _syncTriggerLabel('filter-location',  state.locations,  locations,  'All Locations');
 
     // Date range from data — constrain all date pickers to actual data range
     const dates = data.map(r => r.arrival_time).filter(Boolean).sort();
@@ -217,6 +225,16 @@ const Filters = (() => {
     });
   }
 
+  // ── Sync trigger label to current selection state ──────────
+  function _syncTriggerLabel(triggerId, arr, allValues, placeholder) {
+    const el = document.getElementById(triggerId);
+    if (!el) return;
+    const isAll = arr.length === 0 || arr.length === allValues.length;
+    el.textContent = isAll ? placeholder
+      : arr.length === 1 ? arr[0]
+      : arr.length + ' selected';
+  }
+
   // ── Standard single-select ───────────────────────────────
   function _setOptions(id, values, placeholder) {
     const el = document.getElementById(id);
@@ -320,17 +338,15 @@ const Filters = (() => {
       if (el) el.value = '';
     });
 
-    // Reset multi-select — clear arrays so populate() re-selects all
-    state.disposals  = [];
-    state.traumas    = [];
-    state.locations  = [];
+    // Reset multi-select checkboxes visually — state arrays already cleared above
     document.querySelectorAll('.multiselect-item.checked').forEach(item => {
       item.classList.remove('checked');
       const cb = item.querySelector('input');
       if (cb) cb.checked = false;
     });
+    // Restore trigger labels to their placeholders (not "Please select…")
     document.querySelectorAll('.multiselect-trigger').forEach(t => {
-      t.textContent = 'Please select…';
+      t.textContent = t.dataset.placeholder || 'All';
     });
 
     // Hide compare panel
