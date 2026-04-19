@@ -193,7 +193,7 @@ body {
 
 /* ── Main Content ──────────────────────────────────────────── */
 #main {
-  padding: 0.75rem 2rem 2rem;
+  padding: 0.5rem 1.5rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
@@ -201,11 +201,11 @@ body {
 
 /* ── Tab Panels ────────────────────────────────────────────── */
 .tab-panel { display: none; }
-.tab-panel.active { display: block; padding-top: 0; }
+.tab-panel.active { display: block; margin-top: 0; padding-top: 0; }
 
 /* ── Section Headers ───────────────────────────────────────── */
 .section-header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .section-title {
@@ -329,7 +329,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 0.65rem 1.25rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.5rem;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
