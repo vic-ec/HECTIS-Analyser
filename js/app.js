@@ -113,8 +113,9 @@ const App = (() => {
     renderOverview();
     renderAccessBlock();
     renderTimePatterns();
-    if (typeof Triage !== 'undefined') Triage.render(filteredData);
-    if (typeof Trauma !== 'undefined') Trauma.render(filteredData);
+    if (typeof Triage    !== 'undefined') Triage.render(filteredData);
+    if (typeof Trauma    !== 'undefined') Trauma.render(filteredData);
+    if (typeof Location  !== 'undefined') Location.render(filteredData);
     Table.render(filteredData);
   }
 

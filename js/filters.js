@@ -55,11 +55,15 @@ const Filters = (() => {
   function populate(data) {
     const disposals = Utils.unique(data.map(r => r.disposal).filter(Boolean));
     const triages   = ['Red','Orange','Yellow','Green'].filter(t => data.some(r => r.triage_category === t));
-    const traumas   = Utils.unique(data.map(r => r.trauma).filter(v => v && isValidTrauma(v)));
+    const traumaRaw = Utils.unique(data.map(r => r.trauma).filter(v => v && isValidTrauma(v)));
+    // No Trauma first, then rest alphabetically
+    const traumas = [
+      ...traumaRaw.filter(v => v === 'No Trauma'),
+      ...traumaRaw.filter(v => v !== 'No Trauma').sort()
+    ];
 
-    // Pre-select ALL items on first load
-    if (state.disposals.length === 0 && disposals.length > 0) state.disposals.push(...disposals);
-    if (state.traumas.length === 0   && traumas.length > 0)   state.traumas.push(...traumas);
+    // Empty array = all selected = no filter applied (correct default state)
+    // Do NOT pre-populate - empty means "all" in _applyState
 
     _buildMultiSelect('filter-disposal-wrap', 'filter-disposal', disposals, state.disposals, 'Please select…', v => Utils.shortDiscipline(v));
     _setOptions('filter-triage', triages, 'All Triage');
@@ -114,9 +118,11 @@ const Filters = (() => {
     if (!wrapper) return;
 
     // Build selected label
+    // All selected = same as none selected = show placeholder ("All Disposals" etc)
     const trigger = document.getElementById(triggerId);
     if (trigger) {
-      trigger.textContent = selected.length === 0
+      const allSelected = selected.length === 0 || selected.length === values.length;
+      trigger.textContent = allSelected
         ? placeholder
         : selected.length === 1
           ? labelFn(selected[0])
@@ -131,7 +137,8 @@ const Filters = (() => {
       wrapper.appendChild(list);
     }
 
-    const allChecked = values.length > 0 && values.every(v => selected.includes(v));
+    // Show Select All as checked when all OR none are selected (default state)
+    const allChecked = selected.length === 0 || (values.length > 0 && values.every(v => selected.includes(v)));
     list.innerHTML = `
       <label class="multiselect-item multiselect-select-all ${allChecked ? 'checked' : ''}">
         <input type="checkbox" class="select-all-cb" ${allChecked ? 'checked' : ''}>
@@ -164,9 +171,9 @@ const Filters = (() => {
         selectAllCb.closest('.multiselect-item').classList.toggle('checked', selectAllCb.checked);
         const trigger = document.getElementById(triggerId);
         if (trigger) {
-          trigger.textContent = arr.length === 0 ? 'Please select…'
-            : arr.length === values.length ? 'All selected'
-            : `${arr.length} selected`;
+          // All or none = show placeholder
+          const isAll = arr.length === 0 || arr.length === values.length;
+          trigger.textContent = isAll ? placeholder : `${arr.length} selected`;
         }
         if (onChangeCallback) onChangeCallback();
       });
@@ -185,12 +192,12 @@ const Filters = (() => {
           if (idx > -1) arr.splice(idx, 1);
           cb.closest('.multiselect-item').classList.remove('checked');
         }
-        // Update trigger label
+        // Update trigger label - all selected or none = show placeholder
         const trigger = document.getElementById(triggerId);
         if (trigger) {
           const allVals = list.querySelectorAll('input[type=checkbox]:not(.select-all-cb)');
-          trigger.textContent = arr.length === 0 ? 'Please select…'
-            : arr.length === allVals.length ? 'All selected'
+          const isAll = arr.length === 0 || arr.length === allVals.length;
+          trigger.textContent = isAll ? placeholder
             : arr.length === 1 ? labelFn(arr[0])
             : `${arr.length} selected`;
         }
