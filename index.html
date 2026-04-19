@@ -52,6 +52,7 @@
     <button class="nav-tab active" data-tab="overview"><span class="tab-icon">◈</span> Overview</button>
     <button class="nav-tab" data-tab="access-block"><span class="tab-icon">⊘</span> Access Block</button>
     <button class="nav-tab" data-tab="time-patterns"><span class="tab-icon">◷</span> Time Patterns</button>
+    <button class="nav-tab" data-tab="locations"><span class="tab-icon">⌂</span> Locations</button>
     <button class="nav-tab" data-tab="triage-compliance"><span class="tab-icon">✦</span> Triage Compliance</button>
     <button class="nav-tab" data-tab="trauma"><span class="tab-icon">⚕</span> Trauma</button>
     <button class="nav-tab" data-tab="compare"><span class="tab-icon">⇄</span> Compare</button>
@@ -110,8 +111,8 @@
         <div class="kpi-card" id="kpi-seg-dte"><div class="kpi-label">Disposal → Exit</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
       </div>
       <div class="grid-2">
-        <div class="card"><div class="card-title">Disposal → Exit Trend (referrals only)</div><div class="chart-wrap" style="height:260px"><canvas id="chart-los-trend"></canvas></div></div>
-        <div class="card"><div class="card-title">Median LOS Segments by Month</div><div class="chart-wrap" style="height:260px"><canvas id="chart-segments"></canvas></div></div>
+        <div class="card"><div class="card-title">Disposal → Exit Trend (referrals only)</div><div class="chart-wrap chart-wide"><canvas id="chart-los-trend"></canvas></div></div>
+        <div class="card"><div class="card-title">Median LOS Segments by Month</div><div class="chart-wrap"><canvas id="chart-segments"></canvas></div></div>
       </div>
     </div>
 
@@ -119,11 +120,68 @@
     <div class="tab-panel" id="tab-access-block">
       <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Access Block Analysis</div><div class="section-desc">Disposal-to-exit boarding times by disposal type</div></div>
       <div class="grid-2" style="margin-bottom:1.5rem">
-        <div class="card"><div class="card-title">Disposal → Exit by Discipline (Median / P75 / P90)</div><div class="chart-wrap" style="height:280px"><canvas id="chart-ab-discipline"></canvas></div></div>
-        <div class="card"><div class="card-title">Access Block Rate by Discipline (% > 4 hrs)</div><div class="chart-wrap" style="height:280px"><canvas id="chart-ab-rate"></canvas></div></div>
+        <div class="card"><div class="card-title">Disposal → Exit by Discipline (Median / P75 / P90)</div><div class="chart-wrap"><canvas id="chart-ab-discipline"></canvas></div></div>
+        <div class="card"><div class="card-title">Access Block Rate by Discipline (% > 4 hrs)</div><div class="chart-wrap chart-tall"><canvas id="chart-ab-rate"></canvas></div></div>
       </div>
       <div class="card"><div class="card-title">Discipline Summary Table</div><div id="discipline-summary"><div class="empty-state"><div class="empty-icon">⊘</div><p>No data loaded yet</p></div></div></div>
     </div>
+
+    <!-- LOCATIONS TAB -->
+    <div class="tab-panel" id="tab-locations">
+      <div class="section-header" style="margin-bottom:0.5rem">
+        <div class="section-title">Ward & Location Analysis</div>
+        <div class="section-desc">Boarding times by exit destination — identify which wards cause the greatest access block</div>
+      </div>
+
+      <!-- Filter by discipline -->
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+        <div class="filter-group" style="min-width:200px">
+          <label class="filter-label">Filter by discipline</label>
+          <select id="loc-filter-discipline" class="filter-select">
+            <option value="">All Disciplines</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1rem">
+        <div class="kpi-card alert">
+          <div class="kpi-label">Highest Boarding Ward</div>
+          <div class="kpi-value" id="loc-kpi-worst-val">—</div>
+          <div class="kpi-unit" id="loc-kpi-worst-unit"></div>
+        </div>
+        <div class="kpi-card good">
+          <div class="kpi-label">Fastest Turnaround Ward</div>
+          <div class="kpi-value" id="loc-kpi-best-val">—</div>
+          <div class="kpi-unit" id="loc-kpi-best-unit"></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Unique Destinations</div>
+          <div class="kpi-value" id="loc-kpi-n-val">—</div>
+          <div class="kpi-unit" id="loc-kpi-n-unit"></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div id="location-content">
+        <div class="grid-2" style="margin-bottom:1rem">
+          <div class="card">
+            <div class="card-title">Median Boarding by Ward (top 15)</div>
+            <div class="chart-wrap chart-tall"><canvas id="chart-location-ward"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Discipline Mix by Ward (top 10)</div>
+            <div class="chart-wrap chart-tall"><canvas id="chart-location-discipline"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Ward Detail Table</div>
+          <div id="location-table"></div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- TIME PATTERNS -->
     <div class="tab-panel" id="tab-time-patterns">
@@ -132,9 +190,9 @@
       <div class="card" style="margin-bottom:1rem">
         <div class="card-title">Median Disposal → Exit · Hour × Day of Week</div>
         <div class="section-desc" style="margin-bottom:1rem">Colour scale: green = short wait → red = prolonged boarding</div>
-        <div id="heatmap-container"></div>
+        <div id="heatmap-container" style="width:100%;overflow-x:auto"></div>
       </div>
-      <div class="card"><div class="card-title">Median Disposal → Exit by Day of Week</div><div class="chart-wrap" style="height:260px"><canvas id="chart-dow"></canvas></div></div>
+      <div class="card"><div class="card-title">Median Disposal → Exit by Day of Week</div><div class="chart-wrap"><canvas id="chart-dow"></canvas></div></div>
     </div>
 
     <!-- TRIAGE COMPLIANCE -->
@@ -147,10 +205,10 @@
         <div class="kpi-card triage-kpi-card" id="triage-kpi-green"><div class="kpi-label" style="color:var(--triage-green)">● Green — ≤240 min</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-sub"></div></div>
       </div>
       <div class="grid-2" style="margin-bottom:1.5rem">
-        <div class="card"><div class="card-title">Compliance % by Triage Category</div><div class="chart-wrap" style="height:260px"><canvas id="chart-triage-compliance"></canvas></div></div>
-        <div class="card"><div class="card-title">Median Actual Wait vs Target</div><div class="chart-wrap" style="height:260px"><canvas id="chart-triage-wait"></canvas></div></div>
+        <div class="card"><div class="card-title">Compliance % by Triage Category</div><div class="chart-wrap"><canvas id="chart-triage-compliance"></canvas></div></div>
+        <div class="card"><div class="card-title">Median Actual Wait vs Target</div><div class="chart-wrap"><canvas id="chart-triage-wait"></canvas></div></div>
       </div>
-      <div class="card" style="margin-bottom:1.5rem"><div class="card-title">Compliance Trend Over Time</div><div class="chart-wrap" style="height:260px"><canvas id="chart-triage-trend"></canvas></div></div>
+      <div class="card" style="margin-bottom:1.5rem"><div class="card-title">Compliance Trend Over Time</div><div class="chart-wrap chart-wide"><canvas id="chart-triage-trend"></canvas></div></div>
       <div class="card"><div class="card-title">Compliance Detail Table</div><div id="triage-detail-table"></div></div>
     </div>
 
@@ -165,10 +223,10 @@
         <div class="trauma-split-card" id="trauma-kpi-ttd"><div class="trauma-split-label">Median Triage→Doctor</div><div class="trauma-split-row"><div class="trauma-half"><div class="trauma-half-label t">Trauma</div><div class="trauma-val">—</div></div><div class="trauma-split-divider"></div><div class="trauma-half"><div class="trauma-half-label nt">Non-Trauma</div><div class="nontrauma-val">—</div></div></div></div>
       </div>
       <div class="grid-2" style="margin-bottom:1.5rem">
-        <div class="card"><div class="card-title">Disposal → Exit: Trauma vs Non-Trauma</div><div class="chart-wrap" style="height:260px"><canvas id="chart-trauma-vs-nontrauma"></canvas></div></div>
-        <div class="card"><div class="card-title">Triage Acuity Distribution: Trauma vs Non-Trauma</div><div class="chart-wrap" style="height:260px"><canvas id="chart-trauma-triage-dist"></canvas></div></div>
+        <div class="card"><div class="card-title">Disposal → Exit: Trauma vs Non-Trauma</div><div class="chart-wrap"><canvas id="chart-trauma-vs-nontrauma"></canvas></div></div>
+        <div class="card"><div class="card-title">Triage Acuity Distribution: Trauma vs Non-Trauma</div><div class="chart-wrap"><canvas id="chart-trauma-triage-dist"></canvas></div></div>
       </div>
-      <div class="card" style="margin-bottom:1.5rem"><div class="card-title">Top Trauma Types by Volume</div><div class="chart-wrap" style="height:320px"><canvas id="chart-trauma-types"></canvas></div></div>
+      <div class="card" style="margin-bottom:1.5rem"><div class="card-title">Top Trauma Types by Volume</div><div class="chart-wrap chart-tall"><canvas id="chart-trauma-types"></canvas></div></div>
       <div class="card"><div class="card-title">Trauma Type Detail Table</div><div id="trauma-detail-table"></div></div>
     </div>
 
@@ -328,6 +386,7 @@
 <script src="js/triage.js"></script>
 <script src="js/trauma.js"></script>
 <script src="js/report.js"></script>
+<script src="js/location.js"></script>
 <script src="js/compare.js"></script>
 <script src="js/app.js"></script>
 </body>
