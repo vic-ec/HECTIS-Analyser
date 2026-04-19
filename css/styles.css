@@ -301,26 +301,44 @@ body {
 /* ── Grid Layouts ──────────────────────────────────────────── */
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
 .col-span-2 { grid-column: span 2; }
 
 /* ── Chart Containers ──────────────────────────────────────── */
+/* Charts scale proportionally with container width */
 .chart-wrap {
   position: relative;
   width: 100%;
+  /* Default aspect ratio: 16:7 — wide landscape for dashboard charts */
+  aspect-ratio: 16 / 7;
+  min-height: 180px;
+  overflow: hidden;
+}
+
+/* Wider charts (trend lines with many data points) */
+.chart-wrap.chart-wide {
+  aspect-ratio: 16 / 6;
+}
+
+/* Taller charts (horizontal bar charts, heatmaps) */
+.chart-wrap.chart-tall {
+  aspect-ratio: 4 / 3;
+  min-height: 240px;
 }
 
 .chart-wrap canvas {
-  max-width: 100%;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* ── Filter Bar ────────────────────────────────────────────── */
@@ -762,13 +780,18 @@ tr:last-child td { border-bottom: none; }
 }
 
 /* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 900px) {
-  #main { padding: 1rem; }
+  #main { padding: 0.5rem 1rem 1.5rem; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .col-span-2 { grid-column: span 1; }
   #filter-bar { gap: 0.75rem; }
   .filter-actions { margin-left: 0; width: 100%; }
   .header-subtitle { display: none; }
+  .chart-wrap { aspect-ratio: 4 / 3; }
 }
 
 @media (max-width: 600px) {
