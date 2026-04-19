@@ -72,6 +72,16 @@ const Filters = (() => {
       ...traumaRaw.filter(v => v !== 'No Trauma').sort()
     ];
 
+    // Locations: wards first (alpha), then outcome locations
+    const locationRaw = Utils.unique(data.map(r => r.location).filter(v => v && isValidLocation(v)));
+    const OUTCOME_LOCS = new Set(['Home','Discharged Home by Discipline','Discharged Home',
+      'Transferred Out','Transferred Out by Discipline','Bereavement Room',
+      'Mortuary','Mortuary Contract','Mortuary Forensic(Salt River)','OPD','Clinical Forensics Unit']);
+    const locations = [
+      ...locationRaw.filter(v => !OUTCOME_LOCS.has(v)).sort(),
+      ...locationRaw.filter(v =>  OUTCOME_LOCS.has(v)).sort(),
+    ];
+
     // Empty array = all selected = no filter applied (correct default state)
     // Do NOT pre-populate - empty means "all" in _applyState
 
