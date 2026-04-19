@@ -1005,3 +1005,51 @@ input[type="date"]:in-range {
   margin-top: 0.2rem;
   letter-spacing: 0.03em;
 }
+
+/* ── Compare Tab Period Cards ────────────────────────────── */
+.compare-period-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.compare-period-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.compare-period-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius);
+  border: 1px solid;
+}
+
+.compare-period-controls {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.compare-period-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.compare-period-filters .filter-group {
+  min-width: 130px;
+  flex: 1;
+}
+
+#btn-add-compare-period {
+  font-size: 0.82rem;
+}
