@@ -54,6 +54,7 @@
     <button class="nav-tab" data-tab="time-patterns"><span class="tab-icon">◷</span> Time Patterns</button>
     <button class="nav-tab" data-tab="triage-compliance"><span class="tab-icon">✦</span> Triage Compliance</button>
     <button class="nav-tab" data-tab="trauma"><span class="tab-icon">⚕</span> Trauma</button>
+    <button class="nav-tab" data-tab="compare"><span class="tab-icon">⇄</span> Compare</button>
     <button class="nav-tab" data-tab="data-table"><span class="tab-icon">≡</span> Data Table</button>
     <button class="nav-tab" data-tab="upload"><span class="tab-icon">↑</span> Upload</button>
     <button class="nav-tab" data-tab="help"><span class="tab-icon">?</span> Help</button>
@@ -88,19 +89,10 @@
       </div>
       <div class="filter-actions">
         <button class="btn btn-ghost" id="btn-reset-filters">Reset</button>
-        <button class="btn btn-secondary" id="btn-compare-toggle">⇄ Compare</button>
         <button class="btn btn-secondary" id="btn-generate-report">🖨 Report</button>
       </div>
     </div>
-    <!-- Multi-period comparison panel -->
-    <div id="compare-panel" style="display:none">
-      <div id="compare-periods-container"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem">
-        <button class="btn btn-ghost" id="btn-add-period" style="font-size:0.78rem">+ Add comparison period</button>
-        <button class="btn btn-ghost" id="btn-clear-periods" onclick="Compare.clearAll()" style="font-size:0.72rem;color:var(--text-dim)">Clear all</button>
-      </div>
-      <div id="compare-period-labels" style="display:none;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem"></div>
-    </div>
+
 
     <!-- OVERVIEW -->
     <div class="tab-panel active" id="tab-overview">
@@ -179,6 +171,32 @@
       <div class="card" style="margin-bottom:1.5rem"><div class="card-title">Top Trauma Types by Volume</div><div class="chart-wrap" style="height:320px"><canvas id="chart-trauma-types"></canvas></div></div>
       <div class="card"><div class="card-title">Trauma Type Detail Table</div><div id="trauma-detail-table"></div></div>
     </div>
+
+    <!-- COMPARE TAB -->
+    <div class="tab-panel" id="tab-compare">
+      <div class="section-header" style="margin-bottom:0.5rem">
+        <div class="section-title">Compare Periods</div>
+        <div class="section-desc">Define up to 10 periods with independent filters — compare disposal→exit, access block rate, and triage compliance side by side</div>
+      </div>
+
+      <!-- Period cards container -->
+      <div id="compare-periods-container" style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem"></div>
+
+      <!-- Add / Clear buttons -->
+      <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:1.5rem">
+        <button class="btn btn-primary" id="btn-add-compare-period">+ Add Period</button>
+        <button class="btn btn-ghost" onclick="Compare.clearAll()" style="font-size:0.78rem;color:var(--text-dim)">Clear all</button>
+      </div>
+
+      <!-- Charts -->
+      <div id="compare-chart-container">
+        <div class="empty-state" style="padding:3rem">
+          <div class="empty-icon">⇄</div>
+          <p>Add periods with date ranges above to see comparison charts</p>
+        </div>
+      </div>
+    </div>
+
 
     <!-- DATA TABLE -->
     <div class="tab-panel" id="tab-data-table">
