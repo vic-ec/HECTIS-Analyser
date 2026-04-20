@@ -12,6 +12,7 @@ const Filters = (() => {
     triage:       null,  // single-select
     traumas:      [],    // multi-select array
     locations:    [],    // multi-select array
+    stat:         'median', // median | mean | p25 | p75 | p90
 
   };
 
@@ -43,12 +44,11 @@ const Filters = (() => {
 
   function _applyState(data, s) {
     // Pre-compute once outside the loop — critical for 137k record performance
-    const hasDisposals = s.disposals.length > 0;
-    const hasTraumas   = s.traumas.length > 0;
-    const hasLocations = s.locations.length > 0;
-    const dispSet      = hasDisposals ? new Set(s.disposals) : null;
-    const traumaSet    = hasTraumas   ? new Set(s.traumas)   : null;
-    const locSet       = hasLocations ? new Set(s.locations) : null;
+    // If array has items, filter to them. If empty, no filter (all pass).
+    // Note: when all items selected, every value matches → same result as no filter
+    const dispSet   = s.disposals.length  > 0 ? new Set(s.disposals)  : null;
+    const traumaSet = s.traumas.length    > 0 ? new Set(s.traumas)    : null;
+    const locSet    = s.locations.length  > 0 ? new Set(s.locations)  : null;
     const dateFrom     = s.dateFrom ? new Date(s.dateFrom).getTime() : null;
     const dateTo       = s.dateTo   ? new Date(s.dateTo + 'T23:59:59').getTime() : null;
 
@@ -87,6 +87,18 @@ const Filters = (() => {
       ...locationRaw.filter(v => !OUTCOME_LOCS.has(v)).sort(),
       ...locationRaw.filter(v =>  OUTCOME_LOCS.has(v)).sort(),
     ];
+
+    // Pre-populate ALL items so "all selected" state is explicit
+    // This way: full array = "All X", empty array = "Please select...", partial = count
+    if (state.disposals.length === 0 && disposals.length > 0) state.disposals.push(...disposals);
+    if (state.traumas.length   === 0 && traumas.length   > 0) state.traumas.push(...traumas);
+    if (state.locations.length === 0 && locations.length > 0) state.locations.push(...locations);
+    // Store total counts so _applyState can short-circuit when all selected
+    state._totalDisposals  = disposals.length;
+    state._totalTraumas    = traumas.length;
+    state._totalLocations  = locations.length;
+
+    // But _applyState must treat full array same as empty (no filter) - already does this
 
     // Empty array = all selected = no filter applied (correct default state)
     // Do NOT pre-populate - empty means "all" in _applyState
@@ -155,12 +167,11 @@ const Filters = (() => {
     // All selected = same as none selected = show placeholder ("All Disposals" etc)
     const trigger = document.getElementById(triggerId);
     if (trigger) {
-      const allSelected = selected.length === 0 || selected.length === values.length;
-      trigger.textContent = allSelected
-        ? placeholder
-        : selected.length === 1
-          ? labelFn(selected[0])
-          : `${selected.length} selected`;
+      // All selected = placeholder, none = "Please select...", partial = count
+      trigger.textContent = selected.length === values.length ? placeholder
+        : selected.length === 0 ? 'Please select…'
+        : selected.length === 1 ? labelFn(selected[0])
+        : `${selected.length} selected`;
     }
 
     // Build or update dropdown list
@@ -171,11 +182,7 @@ const Filters = (() => {
       wrapper.appendChild(list);
     }
 
-    // Show Select All as checked when truly all are selected OR this is default state (empty = all)
-    const allChecked = selected.length === 0 || (values.length > 0 && values.every(v => selected.includes(v)));
-    // For trigger label: empty means "all selected" only on initial load
-    // After user interaction, empty means "please select"
-    // We distinguish via the wrapper's data attribute set by Select All handler
+    const allChecked = values.length > 0 && values.every(v => selected.includes(v));
     // Label for Select All matches the placeholder (All Disposals / All Trauma)
     list.innerHTML = `
       <label class="multiselect-item multiselect-select-all ${allChecked ? 'checked' : ''}">
@@ -209,13 +216,7 @@ const Filters = (() => {
         selectAllCb.closest('.multiselect-item').classList.toggle('checked', selectAllCb.checked);
         const trigger = document.getElementById(triggerId);
         if (trigger) {
-          if (!selectAllCb.checked && arr.length === 0) {
-            // User explicitly unchecked all → "Please select..."
-            trigger.textContent = 'Please select…';
-          } else {
-            const isAll = arr.length === 0 || arr.length === values.length;
-            trigger.textContent = isAll ? placeholder : `${arr.length} selected`;
-          }
+          trigger.textContent = selectAllCb.checked ? placeholder : 'Please select…';
         }
         if (onChangeCallback) onChangeCallback();
       });
@@ -238,13 +239,13 @@ const Filters = (() => {
           if (idx > -1) arr.splice(idx, 1);
           cb.closest('.multiselect-item').classList.remove('checked');
         }
-        // Update trigger label - all selected or none = show placeholder
+        // Update trigger label
         const trigger = document.getElementById(triggerId);
         if (trigger) {
-          const allVals = list.querySelectorAll('input[type=checkbox]:not(.select-all-cb)');
-          const isAll = arr.length === 0 || arr.length === allVals.length;
-          trigger.textContent = isAll ? placeholder
-            : arr.length === 1 ? labelFn(arr[0])
+          const total = list.querySelectorAll('input[type=checkbox]:not(.select-all-cb)').length;
+          trigger.textContent = arr.length === total    ? placeholder
+            : arr.length === 0                         ? 'Please select…'
+            : arr.length === 1                         ? labelFn(arr[0])
             : `${arr.length} selected`;
         }
         if (onChangeCallback) onChangeCallback();
@@ -256,9 +257,9 @@ const Filters = (() => {
   function _syncTriggerLabel(triggerId, arr, allValues, placeholder) {
     const el = document.getElementById(triggerId);
     if (!el) return;
-    const isAll = arr.length === 0 || arr.length === allValues.length;
-    el.textContent = isAll ? placeholder
-      : arr.length === 1 ? arr[0]
+    el.textContent = arr.length === allValues.length ? placeholder
+      : arr.length === 0                             ? 'Please select…'
+      : arr.length === 1                             ? arr[0]
       : arr.length + ' selected';
   }
 
@@ -317,6 +318,16 @@ const Filters = (() => {
       });
     });
 
+    // Stat selector
+    const statEl = document.getElementById('filter-stat');
+    if (statEl) {
+      statEl.value = state.stat;
+      statEl.addEventListener('change', () => {
+        state.stat = statEl.value;
+        if (onChangeCallback) onChangeCallback();
+      });
+    }
+
     // Triage single-select
     const triageEl = document.getElementById('filter-triage');
     if (triageEl) {
@@ -352,6 +363,9 @@ const Filters = (() => {
     // Reset dates to full data range (not null — null means no filter but empty pickers look broken)
     state.dateFrom = window.__hectisMinDate || null;
     state.dateTo   = window.__hectisMaxDate || null;
+    state.stat     = 'median';
+    const statEl2 = document.getElementById('filter-stat');
+    if (statEl2) statEl2.value = 'median';
 
 
     document.getElementById('filter-triage') && (document.getElementById('filter-triage').value = '');
@@ -387,8 +401,9 @@ const Filters = (() => {
   }
 
   function getState() { return { ...state }; }
+  function getStat()   { return state.stat || 'median'; }
   function isComparing() { return typeof Compare !== 'undefined' && Compare.hasPeriods(); }
 
-  return { apply, applyB, populate, bind, reset, getState, isComparing, isValidTrauma };
+  return { apply, applyB, populate, bind, reset, getState, getStat, isComparing, isValidTrauma, isValidLocation };
 
 })();
