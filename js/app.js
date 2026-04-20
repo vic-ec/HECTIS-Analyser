@@ -11,7 +11,6 @@ const App = (() => {
     setupTabs();
     setupUploadZone();
     Table.init();
-    Filters.bind(onFilterChange);
     // Wire report button early so it works regardless of load state
     const reportBtn = document.getElementById('btn-generate-report');
     if (reportBtn) {
@@ -29,10 +28,14 @@ const App = (() => {
         }
       });
     }
-    if (typeof Compare !== 'undefined') Compare.init(
-      () => allData,   // getter so Compare always has fresh data
-      onFilterChange
-    );
+    if (typeof Compare    !== 'undefined') Compare.init(() => allData, () => renderActiveTab());
+    if (typeof TabFilters !== 'undefined') {
+      TabFilters.init();
+      // Register per-tab render callbacks
+      TabFilters.FILTER_TABS.forEach(tab => {
+        TabFilters.onTabChange(tab, () => renderTab(tab));
+      });
+    }
 
 
     await checkConnection();
@@ -71,8 +74,9 @@ const App = (() => {
       if (countEl) countEl.textContent = servedFromCache
         ? `${allData.length.toLocaleString()} records (cached)`
         : `${allData.length.toLocaleString()} records`;
-      Filters.populate(allData);
-      filteredData  = Filters.apply(allData);
+      if (typeof Filters    !== 'undefined') Filters.populate(allData);
+      if (typeof TabFilters !== 'undefined') TabFilters.populate(allData);
+      filteredData  = allData; // Tab filters applied per-tab via TabFilters
       window.__hectisFiltered = filteredData;
 
       // Update Compare tab with fresh data
@@ -81,7 +85,7 @@ const App = (() => {
       // Register background sync callback — fires if new records arrive after cache served
       window.__hectisSyncCallback = (updatedData) => {
         allData      = updatedData;
-        filteredData = Filters.apply(allData);
+        filteredData = allData;
         window.__hectisFiltered = filteredData;
         if (countEl) countEl.textContent = servedFromCache
         ? `${allData.length.toLocaleString()} records (cached)`
@@ -105,48 +109,49 @@ const App = (() => {
     }
   }
 
-  // Track which tab is active and which tabs need re-render
   let activeTab = 'overview';
   let dirtyTabs = new Set();
 
-  // Debounced filter change — waits 120ms after last interaction before rendering
-  const onFilterChange = Utils.debounce(() => {
-    filteredData = Filters.apply(allData);
-    window.__hectisFiltered = filteredData;
-    // Only render the active tab immediately; mark others dirty
-    dirtyTabs = new Set(['overview','access-block','time-patterns','triage','trauma','locations','data-table']);
-    renderActiveTab();
-  }, 120);
+  // Legacy stub — kept in case anything references it
+  const onFilterChange = () => {};
+
+  // Get filtered data for a specific tab
+  function tabData(tab) {
+    if (typeof TabFilters !== 'undefined') {
+      return TabFilters.apply(tab, filteredData);
+    }
+    return filteredData;
+  }
+
+  // Render a specific tab
+  function renderTab(tab) {
+    const d = tabData(tab);
+    switch (tab) {
+      case 'overview':          renderOverview(d);      break;
+      case 'access-block':      renderAccessBlock(d);   break;
+      case 'time-patterns':     renderTimePatterns(d);  break;
+      case 'triage-compliance': if (typeof Triage   !== 'undefined') Triage.render(d);   break;
+      case 'trauma':            if (typeof Trauma   !== 'undefined') Trauma.render(d);   break;
+      case 'locations':         if (typeof Location !== 'undefined') Location.render(d); break;
+      case 'data-table':        Table.render(d);        break;
+    }
+    dirtyTabs.delete(tab);
+  }
 
   // Render only the currently visible tab
   function renderActiveTab() {
-    switch (activeTab) {
-      case 'overview':     renderOverview();     break;
-      case 'access-block': renderAccessBlock();  break;
-      case 'time-patterns': renderTimePatterns(); break;
-      case 'triage':       if (typeof Triage   !== 'undefined') Triage.render(filteredData);   break;
-      case 'trauma':       if (typeof Trauma   !== 'undefined') Trauma.render(filteredData);   break;
-      case 'locations':    if (typeof Location !== 'undefined') Location.render(filteredData); break;
-      case 'data-table':   Table.render(filteredData); break;
-    }
-    dirtyTabs.delete(activeTab);
+    renderTab(activeTab);
   }
 
   // Render all tabs (used on initial load)
   function renderAll() {
     dirtyTabs = new Set();
-    renderOverview();
-    renderAccessBlock();
-    renderTimePatterns();
-    if (typeof Triage    !== 'undefined') Triage.render(filteredData);
-    if (typeof Trauma    !== 'undefined') Trauma.render(filteredData);
-    if (typeof Location  !== 'undefined') Location.render(filteredData);
-    Table.render(filteredData);
+    TabFilters.FILTER_TABS.forEach(tab => renderTab(tab));
   }
 
   // ── Overview ─────────────────────────────────────────────
-  function renderOverview() {
-    const data = filteredData;
+  function renderOverview(tabFilteredData) {
+    const data = tabFilteredData || filteredData;
     const comparing = false;
     const dataB = null;
     const compPeriods = [];
@@ -229,8 +234,8 @@ const App = (() => {
     });
 
     // Charts — year-over-year overlay or comparison
-    Charts.renderLosTrend('chart-los-trend', allData, filteredData, null, Filters.getStat());
-    Charts.renderSegmentBreakdown('chart-segments', filteredData, Filters.getStat());
+    Charts.renderLosTrend('chart-los-trend', allData, data, null, TabFilters.getStat('overview'));
+    Charts.renderSegmentBreakdown('chart-segments', data, TabFilters.getStat('overview'));
 
 
   }
@@ -295,8 +300,8 @@ const App = (() => {
   }
 
   // ── Access Block ─────────────────────────────────────────
-  function renderAccessBlock() {
-    const data = filteredData.filter(r=>r.disposal&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
+  function renderAccessBlock(tabFilteredData) { const data = tabFilteredData || filteredData;
+    const abData = data.filter(r=>r.disposal&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
     Charts.renderAccessBlockByDiscipline('chart-ab-discipline', data);
     Charts.renderAccessBlockRate('chart-ab-rate', data);
     const container = document.getElementById('discipline-summary');
@@ -333,8 +338,8 @@ const App = (() => {
   }
 
   // ── Time Patterns ────────────────────────────────────────
-  function renderTimePatterns() {
-    const data = filteredData.filter(r=>r.disposal_time&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
+  function renderTimePatterns(tabFilteredData) { const data = tabFilteredData || filteredData;
+    const innerData = data.filter(r=>r.disposal_time&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
     const sel  = document.getElementById('heatmap-discipline');
     const disc = sel ? sel.value||null : null;
     Charts.renderHeatmap('heatmap-container', data, disc);
