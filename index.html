@@ -96,6 +96,16 @@
           <div class="multiselect-list"></div>
         </div>
       </div>
+      <div class="filter-group" style="min-width:130px">
+        <label class="filter-label">Statistic</label>
+        <select id="filter-stat" class="filter-select">
+          <option value="median">Median (50th)</option>
+          <option value="mean">Mean (Average)</option>
+          <option value="p25">25th Percentile</option>
+          <option value="p75">75th Percentile</option>
+          <option value="p90">90th Percentile</option>
+        </select>
+      </div>
       <div class="filter-actions">
         <button class="btn btn-ghost" id="btn-reset-filters">Reset</button>
         <button class="btn btn-secondary" id="btn-generate-report">🖨 Report</button>
