@@ -8,6 +8,26 @@ const Charts = (() => {
   const registry = {};
 
   // ── Default Chart Options ────────────────────────────────
+  // ── Stat calculation helper ─────────────────────────────
+  function calcStat(vals, stat) {
+    if (!vals || vals.length === 0) return null;
+    switch (stat) {
+      case 'mean': {
+        const sum = vals.reduce((a, b) => a + b, 0);
+        return Utils.r2(sum / vals.length);
+      }
+      case 'p25': return Utils.r2(Utils.percentile(vals, 25));
+      case 'p75': return Utils.r2(Utils.percentile(vals, 75));
+      case 'p90': return Utils.r2(Utils.percentile(vals, 90));
+      case 'median':
+      default:    return Utils.r2(Utils.median(vals));
+    }
+  }
+
+  function statLabel(stat) {
+    return { median:'Median', mean:'Mean', p25:'25th %ile', p75:'75th %ile', p90:'90th %ile' }[stat] || 'Median';
+  }
+
   const baseOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -202,7 +222,7 @@ const Charts = (() => {
   //   1. Single period, one year  → monthly trend by disposal
   //   2. Single period, multi-year → year-over-year overlay by month
   //   3. Period A vs Period B      → two lines, dashed for B
-  function renderLosTrend(id, allData, filteredData, compPeriods) {
+  function renderLosTrend(id, allData, filteredData, compPeriods, stat = 'median') {
     const canvas = getCanvas(id);
     if (!canvas) return;
     const data = filteredData || allData;
@@ -309,7 +329,7 @@ const Charts = (() => {
     registry[id] = new Chart(canvas, { type:'line', data:{ labels, datasets }, options:baseOpts });
   }
   // ── LOS Segments Stacked (Overall) ──────────────────────
-  function renderSegmentBreakdown(id, data) {
+  function renderSegmentBreakdown(id, data, stat = 'median') {
     const canvas = getCanvas(id);
     if (!canvas) return;
 
@@ -340,7 +360,7 @@ const Charts = (() => {
       data: keys.map(k => {
         const vals = byMonth[k].map(r => r[s.key]).filter(v => v !== null && v >= 0);
         // Use r2 for precision - segments like Arrival→Triage are often < 1h
-        return vals.length >= 3 ? Utils.r2(Utils.toHours(Utils.median(vals))) : null;
+        return vals.length >= 3 ? Utils.r2(Utils.toHours(calcStat(vals, stat))) : null;
       }),
       backgroundColor: s.color + 'bb',
       borderColor: s.color,

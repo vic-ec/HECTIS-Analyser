@@ -229,8 +229,8 @@ const App = (() => {
     });
 
     // Charts — year-over-year overlay or comparison
-    Charts.renderLosTrend('chart-los-trend', allData, filteredData, null);
-    Charts.renderSegmentBreakdown('chart-segments', filteredData);
+    Charts.renderLosTrend('chart-los-trend', allData, filteredData, null, Filters.getStat());
+    Charts.renderSegmentBreakdown('chart-segments', filteredData, Filters.getStat());
 
 
   }
