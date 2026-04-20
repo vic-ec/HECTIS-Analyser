@@ -1076,3 +1076,77 @@ input[type="date"]:in-range {
 #btn-add-compare-period {
   font-size: 0.82rem;
 }
+
+/* ── Column Filter Dropdowns ────────────────────────────── */
+.col-filter-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0 0.2rem;
+  margin-left: 0.25rem;
+  line-height: 1;
+  vertical-align: middle;
+  transition: color 0.15s;
+}
+.col-filter-btn:hover { color: var(--accent); }
+
+th.col-filter-active .col-filter-btn { color: var(--accent); }
+th.col-filter-active { background: var(--accent-soft) !important; }
+
+.col-filter-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-width: 200px;
+  max-width: 280px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  padding: 0.5rem;
+}
+.col-filter-dropdown.open { display: block; }
+
+.col-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.col-filter-search {
+  margin-bottom: 0.4rem;
+}
+
+.col-filter-options {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.col-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  transition: background 0.1s;
+}
+.col-filter-option:hover { background: var(--surface-2); }
+.col-filter-option.checked { color: var(--text); }
+.col-filter-option input { cursor: pointer; accent-color: var(--accent); }
+
+/* Sort indicator arrows */
+th.sort-asc::after  { content: ' ↑'; color: var(--accent); font-size: 0.7rem; }
+th.sort-desc::after { content: ' ↓'; color: var(--accent); font-size: 0.7rem; }
