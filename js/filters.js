@@ -171,8 +171,11 @@ const Filters = (() => {
       wrapper.appendChild(list);
     }
 
-    // Show Select All as checked when all OR none are selected (default state)
+    // Show Select All as checked when truly all are selected OR this is default state (empty = all)
     const allChecked = selected.length === 0 || (values.length > 0 && values.every(v => selected.includes(v)));
+    // For trigger label: empty means "all selected" only on initial load
+    // After user interaction, empty means "please select"
+    // We distinguish via the wrapper's data attribute set by Select All handler
     // Label for Select All matches the placeholder (All Disposals / All Trauma)
     list.innerHTML = `
       <label class="multiselect-item multiselect-select-all ${allChecked ? 'checked' : ''}">
@@ -197,7 +200,7 @@ const Filters = (() => {
           cb.checked = selectAllCb.checked;
           const item = cb.closest('.multiselect-item');
           if (selectAllCb.checked) {
-            arr.push(cb.value);
+            if (!arr.includes(cb.value)) arr.push(cb.value);
             item.classList.add('checked');
           } else {
             item.classList.remove('checked');
@@ -206,19 +209,27 @@ const Filters = (() => {
         selectAllCb.closest('.multiselect-item').classList.toggle('checked', selectAllCb.checked);
         const trigger = document.getElementById(triggerId);
         if (trigger) {
-          // All or none = show placeholder
-          const isAll = arr.length === 0 || arr.length === values.length;
-          trigger.textContent = isAll ? placeholder : `${arr.length} selected`;
+          if (!selectAllCb.checked && arr.length === 0) {
+            // User explicitly unchecked all → "Please select..."
+            trigger.textContent = 'Please select…';
+          } else {
+            const isAll = arr.length === 0 || arr.length === values.length;
+            trigger.textContent = isAll ? placeholder : `${arr.length} selected`;
+          }
         }
         if (onChangeCallback) onChangeCallback();
       });
     }
 
-    // Wire checkboxes
+    // Wire checkboxes — map wrapper ID to correct state array
+    const _stateArr = () => wrapperId.includes('disposal') ? state.disposals
+                           : wrapperId.includes('trauma')  ? state.traumas
+                           : wrapperId.includes('location') ? state.locations
+                           : [];
     list.querySelectorAll('input[type=checkbox]').forEach(cb => {
       cb.addEventListener('change', () => {
         const val = cb.value;
-        const arr = wrapperId.includes('disposal') ? state.disposals : state.traumas;
+        const arr = _stateArr();
         if (cb.checked) {
           if (!arr.includes(val)) arr.push(val);
           cb.closest('.multiselect-item').classList.add('checked');
