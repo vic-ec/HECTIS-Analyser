@@ -42,20 +42,26 @@ const Filters = (() => {
   function applyB(data) { return null; } // Legacy - use Compare module
 
   function _applyState(data, s) {
-    return data.filter(r => {
-      // Empty array = all selected (no filter applied)
-      if (s.disposals.length > 0  && !s.disposals.includes(r.disposal)) return false;
-      if (s.triage               && r.triage_category !== s.triage) return false;
-      if (s.traumas.length > 0   && !s.traumas.includes(r.trauma)) return false;
-      if (s.locations.length > 0 && !s.locations.includes(r.location)) return false;
+    // Pre-compute once outside the loop — critical for 137k record performance
+    const hasDisposals = s.disposals.length > 0;
+    const hasTraumas   = s.traumas.length > 0;
+    const hasLocations = s.locations.length > 0;
+    const dispSet      = hasDisposals ? new Set(s.disposals) : null;
+    const traumaSet    = hasTraumas   ? new Set(s.traumas)   : null;
+    const locSet       = hasLocations ? new Set(s.locations) : null;
+    const dateFrom     = s.dateFrom ? new Date(s.dateFrom).getTime() : null;
+    const dateTo       = s.dateTo   ? new Date(s.dateTo + 'T23:59:59').getTime() : null;
 
-      if (s.dateFrom) {
-        const d = new Date(r.arrival_time);
-        if (isNaN(d) || d < new Date(s.dateFrom)) return false;
-      }
-      if (s.dateTo) {
-        const d = new Date(r.arrival_time);
-        if (isNaN(d) || d > new Date(s.dateTo + 'T23:59:59')) return false;
+    return data.filter(r => {
+      if (dispSet  && !dispSet.has(r.disposal))          return false;
+      if (s.triage && r.triage_category !== s.triage)    return false;
+      if (traumaSet && !traumaSet.has(r.trauma))         return false;
+      if (locSet   && !locSet.has(r.location))           return false;
+      if (dateFrom !== null || dateTo !== null) {
+        const t = r.arrival_time ? new Date(r.arrival_time).getTime() : NaN;
+        if (isNaN(t)) return false;
+        if (dateFrom !== null && t < dateFrom) return false;
+        if (dateTo   !== null && t > dateTo)   return false;
       }
       return true;
     });

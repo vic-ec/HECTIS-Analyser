@@ -91,7 +91,9 @@ const App = (() => {
         Utils.toast(`${(updatedData.length - allData.length + updatedData.length - updatedData.length).toLocaleString()} new records synced`, 'info', 2500);
       };
 
-      // Small defer to ensure DOM is ready before rendering heavy modules
+      // Render all tabs on initial load, then switch to lazy mode
+      activeTab = document.querySelector('.nav-tab.active')?.dataset?.tab || 'overview';
+      dirtyTabs = new Set();
       setTimeout(() => renderAll(), 50);
 
       const exportBtn = document.getElementById('btn-export-excel');
@@ -103,13 +105,36 @@ const App = (() => {
     }
   }
 
-  function onFilterChange() {
-    filteredData  = Filters.apply(allData);
+  // Track which tab is active and which tabs need re-render
+  let activeTab = 'overview';
+  let dirtyTabs = new Set();
+
+  // Debounced filter change — waits 120ms after last interaction before rendering
+  const onFilterChange = Utils.debounce(() => {
+    filteredData = Filters.apply(allData);
     window.__hectisFiltered = filteredData;
-    renderAll();
+    // Only render the active tab immediately; mark others dirty
+    dirtyTabs = new Set(['overview','access-block','time-patterns','triage','trauma','locations','data-table']);
+    renderActiveTab();
+  }, 120);
+
+  // Render only the currently visible tab
+  function renderActiveTab() {
+    switch (activeTab) {
+      case 'overview':     renderOverview();     break;
+      case 'access-block': renderAccessBlock();  break;
+      case 'time-patterns': renderTimePatterns(); break;
+      case 'triage':       if (typeof Triage   !== 'undefined') Triage.render(filteredData);   break;
+      case 'trauma':       if (typeof Trauma   !== 'undefined') Trauma.render(filteredData);   break;
+      case 'locations':    if (typeof Location !== 'undefined') Location.render(filteredData); break;
+      case 'data-table':   Table.render(filteredData); break;
+    }
+    dirtyTabs.delete(activeTab);
   }
 
+  // Render all tabs (used on initial load)
   function renderAll() {
+    dirtyTabs = new Set();
     renderOverview();
     renderAccessBlock();
     renderTimePatterns();
@@ -336,6 +361,11 @@ const App = (() => {
         tab.classList.add('active');
         const panel = document.getElementById(`tab-${target}`);
         if (panel) panel.classList.add('active');
+        activeTab = target;
+        // Render this tab now if it was dirtied while another tab was active
+        if (dirtyTabs && dirtyTabs.has(activeTab)) {
+          renderActiveTab();
+        }
       });
     });
   }
