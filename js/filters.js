@@ -262,23 +262,24 @@ const Filters = (() => {
 
   // ── Setup multi-select toggle behaviour ──────────────────
   function _setupMultiSelectToggles() {
+    // Use event delegation — works for all multiselect triggers including location
+    // which is built after initial bind() call
     document.addEventListener('click', e => {
-      // Close all open dropdowns when clicking outside
+      const trigger = e.target.closest('.multiselect-trigger');
+      if (trigger) {
+        e.stopPropagation();
+        const wrap = trigger.closest('.multiselect-wrap');
+        const list = wrap?.querySelector('.multiselect-list');
+        if (!list) return;
+        const isOpen = list.classList.contains('open');
+        document.querySelectorAll('.multiselect-list.open').forEach(l => l.classList.remove('open'));
+        if (!isOpen) list.classList.add('open');
+        return;
+      }
+      // Click outside — close all
       if (!e.target.closest('.multiselect-wrap')) {
         document.querySelectorAll('.multiselect-list.open').forEach(l => l.classList.remove('open'));
       }
-    });
-
-    document.querySelectorAll('.multiselect-trigger').forEach(trigger => {
-      trigger.addEventListener('click', e => {
-        e.stopPropagation();
-        const wrap = trigger.closest('.multiselect-wrap');
-        const list = wrap.querySelector('.multiselect-list');
-        const isOpen = list.classList.contains('open');
-        // Close all others
-        document.querySelectorAll('.multiselect-list.open').forEach(l => l.classList.remove('open'));
-        if (!isOpen) list.classList.add('open');
-      });
     });
   }
 

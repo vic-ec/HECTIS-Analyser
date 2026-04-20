@@ -183,7 +183,7 @@ const Compare = (() => {
     if (!canvas) return;
     const existing = Chart.getChart(canvas); if (existing) existing.destroy();
 
-    const labels = datasets.map(ds => 'Period ' + ds.label);
+    const labels = datasets.map(ds => ds.label);
     const rates  = datasets.map(ds => {
       const refs = ds.data.filter(r => Utils.isReferral(r.disposal) && r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
       if (!refs.length) return null;
@@ -203,7 +203,7 @@ const Compare = (() => {
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: true,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: { backgroundColor:'#21262d', borderColor:'#30363d', borderWidth:1, titleColor:'#e6edf3', bodyColor:'#7d8590', titleFont:{family:'DM Mono',size:11}, bodyFont:{family:'DM Mono',size:11}, padding:10,
@@ -237,7 +237,7 @@ const Compare = (() => {
       });
       const keys = Object.keys(byMonth).sort();
       return {
-        label: 'Period ' + ds.label,
+        label: ds.label,
         data: keys.map(k => {
           const vals = byMonth[k];
           return vals.length >= 3 ? Utils.r1(Utils.toHours(Utils.median(vals))) : null;
@@ -266,7 +266,7 @@ const Compare = (() => {
       type: 'line',
       data: { labels, datasets: chartDatasets },
       options: {
-        responsive: true, maintainAspectRatio: true,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { labels:{color:'#7d8590',font:{family:'DM Mono',size:11},boxWidth:12} },
           tooltip: { backgroundColor:'#21262d', borderColor:'#30363d', borderWidth:1, titleColor:'#e6edf3', bodyColor:'#7d8590', titleFont:{family:'DM Mono',size:11}, bodyFont:{family:'DM Mono',size:11}, padding:10,
@@ -310,9 +310,9 @@ const Compare = (() => {
 
     new Chart(canvas, {
       type: 'bar',
-      data: { labels: datasets.map(ds => 'Period ' + ds.label), datasets: chartDatasets },
+      data: { labels: datasets.map(ds => ds.label), datasets: chartDatasets },
       options: {
-        responsive: true, maintainAspectRatio: true,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { labels:{color:'#7d8590',font:{family:'DM Mono',size:11},boxWidth:12} },
           tooltip: { backgroundColor:'#21262d', borderColor:'#30363d', borderWidth:1, titleColor:'#e6edf3', bodyColor:'#7d8590', titleFont:{family:'DM Mono',size:11}, bodyFont:{family:'DM Mono',size:11}, padding:10,
