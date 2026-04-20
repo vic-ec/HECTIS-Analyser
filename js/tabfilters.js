@@ -152,9 +152,8 @@ const TabFilters = (() => {
             <select class="filter-select tab-stat-sel" data-tab="${tab}">
               <option value="median" ${s.stat==='median'?'selected':''}>Median</option>
               <option value="mean"   ${s.stat==='mean'  ?'selected':''}>Mean</option>
-              <option value="p25"    ${s.stat==='p25'   ?'selected':''}>25th %ile</option>
-              <option value="p75"    ${s.stat==='p75'   ?'selected':''}>75th %ile</option>
-              <option value="p90"    ${s.stat==='p90'   ?'selected':''}>90th %ile</option>
+              <option value="min"    ${s.stat==='min'   ?'selected':''}>Minimum</option>
+              <option value="max"    ${s.stat==='max'   ?'selected':''}>Maximum</option>
             </select>
           </div>
           <div class="filter-group" style="align-self:flex-end;display:flex;gap:0.35rem">

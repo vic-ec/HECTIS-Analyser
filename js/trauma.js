@@ -40,7 +40,7 @@ const Trauma = (() => {
   }
 
   // ── Render split KPIs ────────────────────────────────────
-  function renderSplitKPIs(data) {
+  function renderSplitKPIs(data, stat = 'median') {
     const traumaRows    = data.filter(isTrauma);
     const nonTraumaRows = data.filter(r => !isTrauma(r));
 
@@ -70,9 +70,8 @@ const Trauma = (() => {
     if (!vals || !vals.length) return null;
     switch(stat) {
       case 'mean': return vals.reduce((a,b)=>a+b,0)/vals.length;
-      case 'p25':  return Utils.percentile(vals,25);
-      case 'p75':  return Utils.percentile(vals,75);
-      case 'p90':  return Utils.percentile(vals,90);
+      case 'min':  return Math.min(...vals);
+      case 'max':  return Math.max(...vals);
       default:     return Utils.median(vals);
     }
   }
@@ -87,7 +86,7 @@ const Trauma = (() => {
   function traumaLabel(t) { return TRAUMA_ABBREV[t] || t; }
 
   // ── Trauma type breakdown bar chart ─────────────────────
-  function renderTraumaTypes(id, data) {
+  function renderTraumaTypes(id, data, stat = 'median') {
     const canvas = document.getElementById(id);
     if (!canvas) return;
     const existing = Chart.getChart(canvas); if (existing) existing.destroy();
@@ -171,7 +170,7 @@ const Trauma = (() => {
   }
 
   // ── Trauma vs Non-Trauma: disposal→exit comparison ──────
-  function renderTraumaVsNonTrauma(id, data) {
+  function renderTraumaVsNonTrauma(id, data, stat = 'median') {
     const canvas = document.getElementById(id);
     if (!canvas) return;
     const existing = Chart.getChart(canvas); if (existing) existing.destroy();
@@ -179,11 +178,14 @@ const Trauma = (() => {
     const traumaRows    = data.filter(r => isTrauma(r) && r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
     const nonTraumaRows = data.filter(r => !isTrauma(r) && r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
 
-    const metrics = (rows) => ({
-      median: Utils.r0(Utils.toHours(Utils.median(rows.map(r => r.disposal_to_exit_min)))),
-      p75:    Utils.r0(Utils.toHours(Utils.percentile(rows.map(r => r.disposal_to_exit_min), 75))),
+    const metrics = (rows) => {
+      const vals = rows.map(r => r.disposal_to_exit_min);
+      return {
+      median: Utils.r0(Utils.toHours(calcStat(vals, stat))),
+      p75:    Utils.r0(Utils.toHours(Utils.percentile(vals, 75))),
       p90:    Utils.r0(Utils.toHours(Utils.percentile(rows.map(r => r.disposal_to_exit_min), 90))),
-    });
+    };
+    };
 
     const tm = metrics(traumaRows);
     const nm = metrics(nonTraumaRows);
@@ -377,10 +379,10 @@ const Trauma = (() => {
   }
 
   // ── Main render entry point ──────────────────────────────
-  function render(data) {
-    renderSplitKPIs(data);
-    renderTraumaVsNonTrauma('chart-trauma-vs-nontrauma', data);
-    renderTraumaTypes('chart-trauma-types', data);
+  function render(data, stat = 'median') {
+    renderSplitKPIs(data, stat);
+    renderTraumaVsNonTrauma('chart-trauma-vs-nontrauma', data, stat);
+    renderTraumaTypes('chart-trauma-types', data, stat);
     renderTriageDistribution('chart-trauma-triage-dist', data);
     renderDetailTable(data);
   }

@@ -12,15 +12,11 @@ const Charts = (() => {
   function calcStat(vals, stat) {
     if (!vals || vals.length === 0) return null;
     switch (stat) {
-      case 'mean': {
-        const sum = vals.reduce((a, b) => a + b, 0);
-        return Utils.r2(sum / vals.length);
-      }
-      case 'p25': return Utils.r2(Utils.percentile(vals, 25));
-      case 'p75': return Utils.r2(Utils.percentile(vals, 75));
-      case 'p90': return Utils.r2(Utils.percentile(vals, 90));
+      case 'mean':   return Utils.r2(vals.reduce((a,b)=>a+b,0) / vals.length);
+      case 'min':    return Utils.r2(Math.min(...vals));
+      case 'max':    return Utils.r2(Math.max(...vals));
       case 'median':
-      default:    return Utils.r2(Utils.median(vals));
+      default:       return Utils.r2(Utils.median(vals));
     }
   }
 
@@ -298,7 +294,8 @@ const Charts = (() => {
           label: String(yr),
           data: Array.from({length:12},(_,i)=>i+1).map(m => {
             const rows = yd.filter(r=>r.upload_month===m&&Utils.isReferral(r.disposal)&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
-            return rows.length>=3?Utils.r0(Utils.toHours(Utils.median(rows.map(r=>r.disposal_to_exit_min)))):null;
+            const vals=rows.map(r=>r.disposal_to_exit_min);
+            return rows.length>=3?Utils.r2(Utils.toHours(calcStat(vals,stat))):null;
           }),
           borderColor: yColors[yi%yColors.length], backgroundColor: yColors[yi%yColors.length]+'22',
           borderWidth:2, pointRadius:3, pointHoverRadius:5, tension:0.3, spanGaps:true,

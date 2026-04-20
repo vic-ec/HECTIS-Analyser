@@ -166,7 +166,7 @@ const Compare = (() => {
         </div>
         ${rows.map(r => `
           <div class="discipline-row" style="grid-template-columns:1fr 0.7fr 1fr 1fr 1fr 1fr">
-            <span><span class="compare-label-badge" style="border-color:${r.color};color:${r.color}">Period ${r.label}</span></span>
+            <span><span class="compare-label-badge" style="border-color:${r.color};color:${r.color}">${r.label}</span></span>
             <span class="discipline-stat">${r.n.toLocaleString()}</span>
             <span class="discipline-stat">${r.medLos !== null ? r.medLos + 'h' : '—'}</span>
             <span class="discipline-stat">${Utils.formatMinutes(r.medDte * 60, true)}</span>
