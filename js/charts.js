@@ -82,7 +82,7 @@ const Charts = (() => {
   }
 
   // ── Disposal-to-Exit by Discipline (Box-style Bar) ───────
-  function renderAccessBlockByDiscipline(id, data) {
+  function renderAccessBlockByDiscipline(id, data, stat = 'median') {
     const canvas = getCanvas(id);
     if (!canvas) return;
 
@@ -159,7 +159,7 @@ const Charts = (() => {
   }
 
   // ── Access Block % by Discipline ────────────────────────
-  function renderAccessBlockRate(id, data) {
+  function renderAccessBlockRate(id, data, stat = 'median') {
     const canvas = getCanvas(id);
     if (!canvas) return;
 
@@ -474,7 +474,7 @@ const Charts = (() => {
   }
 
   // ── Day-of-Week Bar Chart ────────────────────────────────
-  function renderDowChart(id, data, discipline = null) {
+  function renderDowChart(id, data, discipline = null, stat = 'median') {
     const canvas = getCanvas(id);
     if (!canvas) return;
 

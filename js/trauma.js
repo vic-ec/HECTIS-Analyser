@@ -24,7 +24,6 @@ const Trauma = (() => {
   function calcMetrics(rows) {
     const los  = rows.map(r => r.total_los_min).filter(v => v !== null && v >= 0);
     const ttd  = rows.map(r => r.triage_to_doctor_min).filter(v => v !== null && v >= 0);
-    // Disposal→Exit: referral patients only — discharges/absconded have 0min which skews median
     const referrals = rows.filter(r => r.disposal && Utils.isReferral(r.disposal));
     const dte  = referrals.map(r => r.disposal_to_exit_min).filter(v => v !== null && v >= 0);
     const blockable = referrals.filter(r => r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
@@ -32,9 +31,9 @@ const Trauma = (() => {
 
     return {
       n:          rows.length,
-      medLos:     Utils.r0(Utils.median(los)),
-      medDte:     Utils.r0(Utils.median(dte)),
-      medTtd:     Utils.r0(Utils.median(ttd)),
+      medLos:     Utils.r0(calcStat(los, stat)),
+      medDte:     Utils.r0(calcStat(dte, stat)),
+      medTtd:     Utils.r0(calcStat(ttd, stat)),
       blockRate:  blockable.length ? Utils.r1((blocked.length / blockable.length) * 100) : null,
       p90Dte:     Utils.r0(Utils.percentile(dte, 90)),
     };
@@ -45,8 +44,8 @@ const Trauma = (() => {
     const traumaRows    = data.filter(isTrauma);
     const nonTraumaRows = data.filter(r => !isTrauma(r));
 
-    const tm = calcMetrics(traumaRows);
-    const nm = calcMetrics(nonTraumaRows);
+    const tm = calcMetrics(traumaRows, stat);
+    const nm = calcMetrics(nonTraumaRows, stat);
 
     const pairs = [
       { id: 'trauma-kpi-n',         t: tm.n,        nt: nm.n,        fmt: v => v.toLocaleString(), label: 'Patients' },
@@ -64,6 +63,18 @@ const Trauma = (() => {
       if (tEl)  tEl.textContent  = t  !== null && t  !== undefined ? fmt(t)  : '—';
       if (ntEl) ntEl.textContent = nt !== null && nt !== undefined ? fmt(nt) : '—';
     });
+  }
+
+  // ── Stat calculation ─────────────────────────────────────
+  function calcStat(vals, stat) {
+    if (!vals || !vals.length) return null;
+    switch(stat) {
+      case 'mean': return vals.reduce((a,b)=>a+b,0)/vals.length;
+      case 'p25':  return Utils.percentile(vals,25);
+      case 'p75':  return Utils.percentile(vals,75);
+      case 'p90':  return Utils.percentile(vals,90);
+      default:     return Utils.median(vals);
+    }
   }
 
   // ── Trauma type abbreviation map ────────────────────────
@@ -118,7 +129,7 @@ const Trauma = (() => {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         indexAxis: 'y',
         plugins: {
           legend: { display: false },
@@ -202,7 +213,7 @@ const Trauma = (() => {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
             labels: { color: '#7d8590', font: { family: 'DM Mono', size: 11 }, boxWidth: 12 }
@@ -278,7 +289,7 @@ const Trauma = (() => {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
             labels: { color: '#7d8590', font: { family: 'DM Mono', size: 11 }, boxWidth: 12 }

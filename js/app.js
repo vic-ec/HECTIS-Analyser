@@ -131,7 +131,7 @@ const App = (() => {
       case 'access-block':      renderAccessBlock(d);   break;
       case 'time-patterns':     renderTimePatterns(d);  break;
       case 'triage-compliance': if (typeof Triage   !== 'undefined') Triage.render(d);   break;
-      case 'trauma':            if (typeof Trauma   !== 'undefined') Trauma.render(d);   break;
+      case 'trauma':            if (typeof Trauma   !== 'undefined') Trauma.render(d, TabFilters.getStat('trauma'));   break;
       case 'locations':         if (typeof Location !== 'undefined') Location.render(d); break;
       case 'data-table':        Table.render(d);        break;
     }
@@ -302,8 +302,8 @@ const App = (() => {
   // ── Access Block ─────────────────────────────────────────
   function renderAccessBlock(tabFilteredData) { const data = tabFilteredData || filteredData;
     const abData = data.filter(r=>r.disposal&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
-    Charts.renderAccessBlockByDiscipline('chart-ab-discipline', data);
-    Charts.renderAccessBlockRate('chart-ab-rate', data);
+    Charts.renderAccessBlockByDiscipline('chart-ab-discipline', data, TabFilters.getStat('access-block'));
+    Charts.renderAccessBlockRate('chart-ab-rate', data, TabFilters.getStat('access-block'));
     const container = document.getElementById('discipline-summary');
     if (!container) return;
     const grouped = Utils.groupBy(data, 'disposal');
@@ -343,7 +343,7 @@ const App = (() => {
     const sel  = document.getElementById('heatmap-discipline');
     const disc = sel ? sel.value||null : null;
     Charts.renderHeatmap('heatmap-container', data, disc);
-    Charts.renderDowChart('chart-dow', data, disc);
+    Charts.renderDowChart('chart-dow', data, disc, TabFilters.getStat('time-patterns'));
     if (sel && sel.options.length <= 1) {
       Utils.unique(data.map(r=>r.disposal).filter(Boolean)).forEach(d => {
         const opt = document.createElement('option');
