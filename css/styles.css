@@ -1150,3 +1150,42 @@ th.col-filter-active { background: var(--accent-soft) !important; }
 /* Sort indicator arrows */
 th.sort-asc::after  { content: ' ↑'; color: var(--accent); font-size: 0.7rem; }
 th.sort-desc::after { content: ' ↓'; color: var(--accent); font-size: 0.7rem; }
+
+/* ── Per-tab Filter Bar ─────────────────────────────────── */
+.tab-filter-container {
+  margin-bottom: 0.75rem;
+}
+
+.tab-filter-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.6rem 1rem;
+}
+
+.tab-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.tab-filter-row .filter-group {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Make date inputs narrower */
+.tab-filter-row .filter-group input[type="date"] {
+  min-width: 120px;
+}
+
+/* Multiselect and selects fill available space */
+.tab-filter-row .multiselect-trigger,
+.tab-filter-row .filter-select {
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
