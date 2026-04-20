@@ -266,13 +266,15 @@
 
     <!-- DATA TABLE -->
     <div class="tab-panel" id="tab-data-table">
-      <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Data Table</div><div class="section-desc">Full record view — sortable, searchable, exportable</div></div>
-      <div style="display:flex;gap:.75rem;margin-bottom:1rem;align-items:center">
-        <input type="search" id="table-search" class="filter-input" placeholder="Search discipline, triage, location…" style="flex:1;max-width:320px">
+      <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Data Table</div><div class="section-desc">Full record view — sortable, filterable by column, exportable</div></div>
+      <div style="display:flex;gap:.75rem;margin-bottom:0.75rem;align-items:center;flex-wrap:wrap">
+        <input type="search" id="table-search" class="filter-input" placeholder="Search triage, disposal, location, trauma…" style="flex:1;min-width:200px;max-width:320px">
+        <button class="btn btn-ghost" onclick="Table.resetAllColFilters()" title="Reset all column filters" style="font-size:0.85rem;padding:0.4rem 0.75rem">↺ Reset filters</button>
+        <span id="pagination-info" style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted);flex:1"></span>
         <button class="btn btn-secondary" id="btn-export-excel">↓ Export Excel</button>
       </div>
       <div class="table-wrap">
-        <table id="data-table"><thead id="data-thead"></thead><tbody id="data-tbody"><tr><td colspan="13" class="empty-state" style="padding:2rem">Loading data…</td></tr></tbody></table>
+        <table id="data-table"><thead id="data-thead"></thead><tbody id="data-tbody"><tr><td colspan="14" class="empty-state" style="padding:2rem">Loading data…</td></tr></tbody></table>
         <div class="pagination"><span id="pagination-info">—</span><div class="page-controls" id="page-controls"></div></div>
       </div>
     </div>
