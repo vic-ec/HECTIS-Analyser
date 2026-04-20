@@ -64,57 +64,12 @@
 
   <main id="main">
 
-    <div id="filter-bar">
-      <div class="filter-group">
-        <label class="filter-label">From</label>
-        <input type="date" id="filter-date-from" class="filter-input">
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">To</label>
-        <input type="date" id="filter-date-to" class="filter-input">
-      </div>
-
-      <div class="filter-group">
-        <label class="filter-label">Disposals</label>
-        <div class="multiselect-wrap" id="filter-disposal-wrap">
-          <button class="multiselect-trigger filter-select" id="filter-disposal" data-placeholder="All Disposals">All Disposals</button>
-          <div class="multiselect-list"></div>
-        </div>
-      </div>
-      <div class="filter-group"><label class="filter-label">Triage</label><select id="filter-triage" class="filter-select"><option value="">All Triage</option></select></div>
-      <div class="filter-group">
-        <label class="filter-label">Trauma</label>
-        <div class="multiselect-wrap" id="filter-trauma-wrap">
-          <button class="multiselect-trigger filter-select" id="filter-trauma" data-placeholder="All Trauma">All Trauma</button>
-          <div class="multiselect-list"></div>
-        </div>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Location</label>
-        <div class="multiselect-wrap" id="filter-location-wrap">
-          <button class="multiselect-trigger filter-select" id="filter-location" data-placeholder="All Locations">All Locations</button>
-          <div class="multiselect-list"></div>
-        </div>
-      </div>
-      <div class="filter-group" style="min-width:130px">
-        <label class="filter-label">Statistic</label>
-        <select id="filter-stat" class="filter-select">
-          <option value="median">Median (50th)</option>
-          <option value="mean">Mean (Average)</option>
-          <option value="p25">25th Percentile</option>
-          <option value="p75">75th Percentile</option>
-          <option value="p90">90th Percentile</option>
-        </select>
-      </div>
-      <div class="filter-actions">
-        <button class="btn btn-ghost" id="btn-reset-filters">Reset</button>
-        <button class="btn btn-secondary" id="btn-generate-report">🖨 Report</button>
-      </div>
-    </div>
+    <!-- Filter bar removed: each tab manages its own filters -->
 
 
     <!-- OVERVIEW -->
     <div class="tab-panel active" id="tab-overview">
+      <div id="tab-filter-overview" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Overview</div><div class="section-desc">Summary across all patients in the selected date range · time segments show medians</div></div>
       <div class="kpi-grid">
         <div class="kpi-card" id="kpi-total"><div class="kpi-label">Total Referrals</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-compare" style="display:none;margin-top:0.4rem;font-size:0.75rem;font-family:var(--font-mono)"></div></div>
@@ -136,6 +91,7 @@
 
     <!-- ACCESS BLOCK -->
     <div class="tab-panel" id="tab-access-block">
+      <div id="tab-filter-access-block" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Access Block Analysis</div><div class="section-desc">Disposal-to-exit boarding times by disposal type</div></div>
       <div class="grid-2" style="margin-bottom:1.5rem">
         <div class="card"><div class="card-title">Disposal → Exit by Discipline (Median / P75 / P90)</div><div class="chart-wrap"><canvas id="chart-ab-discipline"></canvas></div></div>
@@ -146,6 +102,7 @@
 
     <!-- LOCATIONS TAB -->
     <div class="tab-panel" id="tab-locations">
+      <div id="tab-filter-locations" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem">
         <div class="section-title">Ward & Location Analysis</div>
         <div class="section-desc">Boarding times by exit destination — identify which wards cause the greatest access block</div>
@@ -203,6 +160,7 @@
 
     <!-- TIME PATTERNS -->
     <div class="tab-panel" id="tab-time-patterns">
+      <div id="tab-filter-time-patterns" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Time Patterns</div><div class="section-desc">When does access block occur? Hour-of-day and day-of-week analysis</div></div>
       <div style="margin-bottom:1rem"><div class="filter-group"><label class="filter-label">View by discipline</label><select id="heatmap-discipline" class="filter-select"><option value="">All Disciplines</option></select></div></div>
       <div class="card" style="margin-bottom:1rem">
@@ -215,6 +173,7 @@
 
     <!-- TRIAGE COMPLIANCE -->
     <div class="tab-panel" id="tab-triage-compliance">
+      <div id="tab-filter-triage-compliance" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Triage Compliance</div><div class="section-desc">Triage-to-doctor time compliance · Red: immediate · Orange: ≤10 min · Yellow: ≤60 min · Green: ≤240 min</div></div>
       <div class="kpi-grid" style="margin-bottom:1.5rem">
         <div class="kpi-card triage-kpi-card" id="triage-kpi-red"><div class="kpi-label" style="color:var(--triage-red)">● Red — Immediate</div><div class="kpi-value">—</div><div class="kpi-unit"></div><div class="kpi-sub"></div></div>
@@ -232,6 +191,7 @@
 
     <!-- TRAUMA -->
     <div class="tab-panel" id="tab-trauma">
+      <div id="tab-filter-trauma" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Trauma Breakdown</div><div class="section-desc">Trauma vs non-trauma patient flow, triage acuity, and specific trauma type analysis</div></div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem">
         <div class="trauma-split-card" id="trauma-kpi-n"><div class="trauma-split-label">Patients</div><div class="trauma-split-row"><div class="trauma-half"><div class="trauma-half-label t">Trauma</div><div class="trauma-val">—</div></div><div class="trauma-split-divider"></div><div class="trauma-half"><div class="trauma-half-label nt">Non-Trauma</div><div class="nontrauma-val">—</div></div></div></div>
@@ -250,6 +210,7 @@
 
     <!-- COMPARE TAB -->
     <div class="tab-panel" id="tab-compare">
+      <div id="tab-filter-compare" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem">
         <div class="section-title">Compare Periods</div>
         <div class="section-desc">Define up to 10 periods with independent filters — compare disposal→exit, access block rate, and triage compliance side by side</div>
@@ -276,6 +237,7 @@
 
     <!-- DATA TABLE -->
     <div class="tab-panel" id="tab-data-table">
+      <div id="tab-filter-data-table" class="tab-filter-container"></div>
       <div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Data Table</div><div class="section-desc">Full record view — sortable, filterable by column, exportable</div></div>
       <div style="display:flex;gap:.75rem;margin-bottom:0.75rem;align-items:center;flex-wrap:wrap">
         <input type="search" id="table-search" class="filter-input" placeholder="Search triage, disposal, location, trauma…" style="flex:1;min-width:200px;max-width:320px">
@@ -407,6 +369,7 @@
 <script src="js/trauma.js"></script>
 <script src="js/report.js"></script>
 <script src="js/location.js"></script>
+<script src="js/tabfilters.js"></script>
 <script src="js/compare.js"></script>
 <script src="js/app.js"></script>
 </body>
