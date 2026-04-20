@@ -399,7 +399,7 @@ const Charts = (() => {
   }
 
   // ── Hourly Heatmap (disposal-to-exit by hour + day) ──────
-  function renderHeatmap(containerId, data, discipline = null) {
+  function renderHeatmap(containerId, data, discipline = null, stat = 'median') {
     const container = document.getElementById(containerId);
     if (!container) return;
     // Clear and set responsive grid styling
@@ -422,7 +422,7 @@ const Charts = (() => {
           return dow === di && dt.getHours() === h &&
                  r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0;
         });
-        return rows.length >= 2 ? Utils.median(rows.map(r => r.disposal_to_exit_min)) : null;
+        return rows.length >= 2 ? calcStat(rows.map(r => r.disposal_to_exit_min), stat) : null;
       });
     });
 

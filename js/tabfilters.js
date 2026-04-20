@@ -173,7 +173,7 @@ const TabFilters = (() => {
       reportBtn2.addEventListener('click', () => {
         const data = window.__hectisFiltered || [];
         if (!data.length) { Utils.toast('No data loaded yet', 'warn'); return; }
-        try { Report.generate(data); } catch(e) { Utils.toast('Report error: ' + e.message, 'error'); }
+        if (typeof Report !== 'undefined') { try { Report.generate(data); } catch(e) { Utils.toast('Report error: ' + e.message, 'error'); } } else { Utils.toast('Report module not ready — try again', 'warn'); }
       });
     }
 

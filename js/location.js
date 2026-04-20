@@ -20,6 +20,8 @@ const Location = (() => {
 
   // ── Render ───────────────────────────────────────────────
   function render(data) {
+    // Discipline filter now from tab filter bar via disposal filter
+    // Remove reference to standalone loc-filter-discipline dropdown
     const wardData = data.filter(r =>
       r.location && isWard(r.location) &&
       r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0 &&
@@ -70,7 +72,7 @@ const Location = (() => {
     const el = document.getElementById('location-table');
     if (!el) return;
 
-    const filterVal = document.getElementById('loc-filter-discipline')?.value || '';
+    const filterVal = ''; // Discipline filter handled by tab filter bar
     const filtered  = filterVal ? data.filter(r => r.disposal === filterVal) : data;
     const grouped   = Utils.groupBy(filtered, 'location');
 
@@ -123,7 +125,7 @@ const Location = (() => {
     if (!canvas) return;
     const existing = Chart.getChart(canvas); if (existing) existing.destroy();
 
-    const filterVal = document.getElementById('loc-filter-discipline')?.value || '';
+    const filterVal = ''; // Discipline filter handled by tab filter bar
     const filtered  = filterVal ? data.filter(r => r.disposal === filterVal) : data;
     const grouped   = Utils.groupBy(filtered, 'location');
 
@@ -235,12 +237,7 @@ const Location = (() => {
       opt.value = d; opt.textContent = Utils.shortDiscipline(d);
       sel.appendChild(opt);
     });
-    sel.addEventListener('change', () => {
-      const d = data;
-      renderWardTable(d);
-      renderWardChart(d);
-      renderDisciplineByWard(d);
-    });
+    // Discipline filter events removed — handled by tab filter bar
   }
 
   return { render };

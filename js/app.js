@@ -133,7 +133,7 @@ const App = (() => {
       case 'triage-compliance': if (typeof Triage   !== 'undefined') Triage.render(d);   break;
       case 'trauma':            if (typeof Trauma   !== 'undefined') Trauma.render(d, TabFilters.getStat('trauma'));   break;
       case 'locations':         if (typeof Location !== 'undefined') Location.render(d); break;
-      case 'data-table':        Table.render(d);        break;
+      case 'data-table':        Table.render(filteredData); break; // data-table uses its own column filters
     }
     dirtyTabs.delete(tab);
   }
@@ -147,6 +147,8 @@ const App = (() => {
   function renderAll() {
     dirtyTabs = new Set();
     TabFilters.FILTER_TABS.forEach(tab => renderTab(tab));
+    // Data table has its own column filters but needs initial data load
+    Table.render(filteredData);
   }
 
   // ── Overview ─────────────────────────────────────────────
@@ -338,20 +340,12 @@ const App = (() => {
   }
 
   // ── Time Patterns ────────────────────────────────────────
-  function renderTimePatterns(tabFilteredData) { const data = tabFilteredData || filteredData;
-    const innerData = data.filter(r=>r.disposal_time&&r.disposal_to_exit_min!==null&&r.disposal_to_exit_min>=0);
-    const sel  = document.getElementById('heatmap-discipline');
-    const disc = sel ? sel.value||null : null;
-    Charts.renderHeatmap('heatmap-container', data, disc);
-    Charts.renderDowChart('chart-dow', data, disc, TabFilters.getStat('time-patterns'));
-    if (sel && sel.options.length <= 1) {
-      Utils.unique(data.map(r=>r.disposal).filter(Boolean)).forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d; opt.textContent = Utils.shortDiscipline(d);
-        sel.appendChild(opt);
-      });
-      sel.addEventListener('change', () => renderTimePatterns());
-    }
+  function renderTimePatterns(tabFilteredData) {
+    const data = tabFilteredData || filteredData;
+    const stat = TabFilters.getStat('time-patterns');
+    // Discipline filter now handled by tab filter bar — no separate dropdown needed
+    Charts.renderHeatmap('heatmap-container', data, null, stat);
+    Charts.renderDowChart('chart-dow', data, null, stat);
   }
 
   // ── Tabs ─────────────────────────────────────────────────
