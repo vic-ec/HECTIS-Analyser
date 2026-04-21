@@ -11,6 +11,8 @@ const Table = (() => {
   let sortDir      = 'desc';
   let currentPage  = 1;
   let searchQuery  = '';
+  let dateFrom     = null;
+  let dateTo       = null;
 
   // Column filters: key → Set of selected values (empty = all)
   const colFilters = {};
@@ -36,10 +38,8 @@ const Table = (() => {
     { key: 'access_block_4hr',       label: 'Access Blk',     fmt: r => r.access_block_4hr
         ? '<span class="badge badge-block">BLOCKED</span>'
         : '<span class="badge badge-ok">OK</span>',                                                          filterable: true,  sortable: false },
-    { key: 'upload_year',            label: 'Month',          fmt: r => r.upload_month && r.upload_year
-        ? `${['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][r.upload_month]} ${r.upload_year}`
-        : '—',                                                                                               filterable: false, sortable: true  },
   ];
+
 
   // ── Apply column filters ────────────────────────────────
   function applyColFilters(data) {
@@ -81,6 +81,15 @@ const Table = (() => {
       );
     }
 
+    if (dateFrom) {
+      const df = new Date(dateFrom).getTime();
+      filtered = filtered.filter(r => r.arrival_time && new Date(r.arrival_time).getTime() >= df);
+    }
+    if (dateTo) {
+      const dt = new Date(dateTo + 'T23:59:59').getTime();
+      filtered = filtered.filter(r => r.arrival_time && new Date(r.arrival_time).getTime() <= dt);
+    }
+
     filtered = applyColFilters(filtered);
 
     // Sort
@@ -103,6 +112,11 @@ const Table = (() => {
     tbody.innerHTML = pageData.map(r =>
       `<tr>${COLUMNS.map(col => `<td>${col.fmt(r)}</td>`).join('')}</tr>`
     ).join('') || `<tr><td colspan="${COLUMNS.length}" class="empty-state" style="padding:2rem">No records match current filters</td></tr>`;
+
+    // Sync floating scrollbar width after render
+    const tbl = document.getElementById('data-table');
+    const scInner = document.getElementById('table-scroll-inner');
+    if (tbl && scInner) scInner.style.width = tbl.scrollWidth + 'px';
 
     if (paginationEl) paginationEl.textContent = `${start+1}–${Math.min(start+PAGE_SIZE, total)} of ${total.toLocaleString()} records`;
 
@@ -200,8 +214,14 @@ const Table = (() => {
   function resetAllColFilters() {
     Object.keys(colFilters).forEach(k => delete colFilters[k]);
     searchQuery = '';
+    dateFrom = null;
+    dateTo   = null;
     const searchEl = document.getElementById('table-search');
     if (searchEl) searchEl.value = '';
+    const dfEl = document.getElementById('table-date-from');
+    const dtEl = document.getElementById('table-date-to');
+    if (dfEl) dfEl.value = '';
+    if (dtEl) dtEl.value = '';
     _buildColFilterOptions(currentData);
     currentPage = 1;
     renderPage();
@@ -284,6 +304,10 @@ const Table = (() => {
     buildHeader();
     const searchEl = document.getElementById('table-search');
     if (searchEl) searchEl.addEventListener('input', Utils.debounce(e => search(e.target.value), 250));
+    const dfEl = document.getElementById('table-date-from');
+    const dtEl = document.getElementById('table-date-to');
+    if (dfEl) dfEl.addEventListener('change', e => { dateFrom = e.target.value || null; currentPage = 1; renderPage(); });
+    if (dtEl) dtEl.addEventListener('change', e => { dateTo   = e.target.value || null; currentPage = 1; renderPage(); });
 
     // Close dropdowns when clicking outside table
     document.addEventListener('click', e => {
@@ -291,6 +315,45 @@ const Table = (() => {
         document.querySelectorAll('.col-filter-dropdown.open').forEach(d => d.classList.remove('open'));
       }
     });
+
+    // Floating horizontal scrollbar — synced with table-wrap
+    const tableWrap    = document.getElementById('table-wrap-outer');
+    const scrollTrack  = document.getElementById('table-scroll-track');
+    const scrollInner  = document.getElementById('table-scroll-inner');
+    const tableEl      = document.getElementById('data-table');
+
+    function syncScrollWidth() {
+      if (tableEl && scrollInner) {
+        scrollInner.style.width = tableEl.scrollWidth + 'px';
+      }
+    }
+
+    if (tableWrap && scrollTrack) {
+      // Sync scroll position both ways
+      scrollTrack.addEventListener('scroll', () => {
+        tableWrap.scrollLeft = scrollTrack.scrollLeft;
+      });
+      tableWrap.addEventListener('scroll', () => {
+        scrollTrack.scrollLeft = tableWrap.scrollLeft;
+      });
+      // Update width when table content changes
+      const resizeObs = new ResizeObserver(syncScrollWidth);
+      if (tableEl) resizeObs.observe(tableEl);
+      syncScrollWidth();
+    }
+
+    // Update date picker min/max from global data range
+    const updateDateBounds = () => {
+      const min = window.__hectisMinDate || '';
+      const max = window.__hectisMaxDate || '';
+      const dfEl = document.getElementById('table-date-from');
+      const dtEl = document.getElementById('table-date-to');
+      if (dfEl) { dfEl.min = min; dfEl.max = max; }
+      if (dtEl) { dtEl.min = min; dtEl.max = max; }
+    };
+    // Try now and also after data loads
+    updateDateBounds();
+    setTimeout(updateDateBounds, 2000);
   }
 
   return { render, sort, goPage, search, exportExcel, init,

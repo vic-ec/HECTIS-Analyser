@@ -59,15 +59,20 @@ const DB = (() => {
     });
   }
 
+  // Write in batches of 2000 to avoid transaction timeouts on large datasets
   async function idbPutAll(records) {
+    const BATCH = 2000;
     const db = await openIDB();
-    return new Promise((resolve, reject) => {
-      const tx    = db.transaction(STORE, 'readwrite');
-      const store = tx.objectStore(STORE);
-      records.forEach(r => store.put(r));
-      tx.oncomplete = () => resolve();
-      tx.onerror    = () => reject(tx.error);
-    });
+    for (let i = 0; i < records.length; i += BATCH) {
+      const batch = records.slice(i, i + BATCH);
+      await new Promise((resolve, reject) => {
+        const tx    = db.transaction(STORE, 'readwrite');
+        const store = tx.objectStore(STORE);
+        batch.forEach(r => store.put(r));
+        tx.oncomplete = () => resolve();
+        tx.onerror    = () => reject(tx.error);
+      });
+    }
   }
 
   async function idbClear() {
