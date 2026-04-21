@@ -21,7 +21,7 @@ const Trauma = (() => {
   }
 
   // ── Key metrics for a set of rows ───────────────────────
-  function calcMetrics(rows) {
+  function calcMetrics(rows, stat = 'median') {
     const los  = rows.map(r => r.total_los_min).filter(v => v !== null && v >= 0);
     const ttd  = rows.map(r => r.triage_to_doctor_min).filter(v => v !== null && v >= 0);
     const referrals = rows.filter(r => r.disposal && Utils.isReferral(r.disposal));

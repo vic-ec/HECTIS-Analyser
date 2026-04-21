@@ -24,7 +24,9 @@ const Compare = (() => {
   }
 
   // ── Update data reference ────────────────────────────────
-  function setData(data) { allDataRef = data; }
+  function setData(data) {
+    allDataRef = data;
+  }
 
   // ── Add period ───────────────────────────────────────────
   function addPeriod() {
@@ -337,8 +339,16 @@ const Compare = (() => {
     const minD = window.__hectisMinDate || '';
     const maxD = window.__hectisMaxDate || '';
 
-    // Get available options from data
-    const data = allDataRef || [];
+    // Get available options from data - wait if not loaded yet
+    const data = (allDataRef && allDataRef.length > 0) ? allDataRef : [];
+    if (data.length === 0) {
+      // Data not loaded yet - retry after data loads
+      Utils.toast('Data still loading — please try again shortly', 'info', 2000);
+      // Remove the period we just added since we can't render it
+      periods = periods.filter(pp => pp.id !== p.id);
+      _updateAddButton();
+      return;
+    }
     const disposals = Utils.unique(data.map(r => r.disposal).filter(Boolean));
     const triages   = ['Red','Orange','Yellow','Green'];
     const traumas   = Utils.unique(data.map(r => r.trauma).filter(v => v && _isValidTrauma(v)));

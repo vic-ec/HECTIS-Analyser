@@ -170,9 +170,17 @@ const TabFilters = (() => {
     const reportBtn2 = container.querySelector('#btn-generate-report');
     if (reportBtn2) {
       reportBtn2.addEventListener('click', () => {
-        const data = window.__hectisFiltered || [];
-        if (!data.length) { Utils.toast('No data loaded yet', 'warn'); return; }
-        if (typeof Report !== 'undefined') { try { Report.generate(data); } catch(e) { Utils.toast('Report error: ' + e.message, 'error'); } } else { Utils.toast('Report module not ready — try again', 'warn'); }
+        // Use the tab's filtered data (Overview tab = 'overview')
+        const allData = window.__hectisAllData || window.__hectisFiltered || [];
+        if (!allData.length) { Utils.toast('No data loaded yet', 'warn'); return; }
+        const tabFiltered = allData; // Report uses all loaded data
+        const ReportModule = window.Report || (typeof Report !== 'undefined' ? Report : null);
+        if (!ReportModule) {
+          Utils.toast('Report unavailable — hard refresh with Ctrl+Shift+R', 'warn');
+          return;
+        }
+        try { ReportModule.generate(tabFiltered); }
+        catch(e) { Utils.toast('Report error: ' + e.message, 'error'); console.error(e); }
       });
     }
 

@@ -16,36 +16,41 @@ const Table = (() => {
   const colFilters = {};
 
   // Filterable columns (dropdown filter)
-  const FILTERABLE = ['triage_category','disposal','location','trauma'];
+  const FILTERABLE = ['triage_category','disposal','location','trauma','sex','access_block_4hr'];
 
   const COLUMNS = [
-    { key: 'arrival_time',           label: 'Arrival',        fmt: r => Utils.formatDate(r.arrival_time),    filterable: false, sortable: true },
-    { key: 'age_raw',                label: 'Age',            fmt: r => r.age_raw || '—',                   filterable: false, sortable: true },
-    { key: 'sex',                    label: 'Sex',            fmt: r => r.sex || '—',                       filterable: false, sortable: true },
+    { key: 'arrival_time',           label: 'Arrival',        fmt: r => Utils.formatDate(r.arrival_time),    filterable: false, sortable: true  },
+    { key: 'age_raw',                label: 'Age',            fmt: r => r.age_raw || '—',                   filterable: false, sortable: true  },
+    { key: 'sex',                    label: 'Sex',            fmt: r => r.sex || '—',                       filterable: true,  sortable: false },
     { key: 'triage_category',        label: 'Triage',         fmt: r => r.triage_category
         ? `<span class="badge ${Utils.triageBadgeClass(r.triage_category)}">${r.triage_category}</span>`
-        : '—',                                                                                               filterable: true,  sortable: true },
-    { key: 'disposal',               label: 'Disposal',       fmt: r => Utils.shortDiscipline(r.disposal) || '—', filterable: true, sortable: true },
-    { key: 'trauma',                 label: 'Trauma',         fmt: r => r.trauma || '—',                    filterable: true,  sortable: true },
-    { key: 'location',               label: 'Location',       fmt: r => r.location || '—',                  filterable: true,  sortable: true },
-    { key: 'arrival_to_triage_min',  label: 'Arr→Triage',     fmt: r => Utils.formatMinutes(r.arrival_to_triage_min, true),  filterable: false, sortable: true },
-    { key: 'triage_to_doctor_min',   label: 'Triage→Dr',      fmt: r => Utils.formatMinutes(r.triage_to_doctor_min, true),   filterable: false, sortable: true },
-    { key: 'doctor_to_disposal_min', label: 'Dr→Disposal',    fmt: r => Utils.formatMinutes(r.doctor_to_disposal_min, true), filterable: false, sortable: true },
-    { key: 'disposal_to_exit_min',   label: 'Disposal→Exit',  fmt: r => Utils.formatMinutes(r.disposal_to_exit_min, true),   filterable: false, sortable: true },
-    { key: 'total_los_min',          label: 'Total LOS',      fmt: r => Utils.formatMinutes(r.total_los_min, true),          filterable: false, sortable: true },
-    { key: 'access_block_4hr',       label: 'Access Block',   fmt: r => r.access_block_4hr
+        : '—',                                                                                               filterable: true,  sortable: false },
+    { key: 'disposal',               label: 'Disposal',       fmt: r => Utils.shortDiscipline(r.disposal) || '—', filterable: true, sortable: false },
+    { key: 'trauma',                 label: 'Trauma',         fmt: r => r.trauma || '—',                    filterable: true,  sortable: false },
+    { key: 'location',               label: 'Location',       fmt: r => r.location || '—',                  filterable: true,  sortable: false },
+    { key: 'arrival_to_triage_min',  label: 'Arr→Triage',     fmt: r => Utils.formatMinutes(r.arrival_to_triage_min, true),  filterable: false, sortable: true  },
+    { key: 'triage_to_doctor_min',   label: 'Triage→Dr',      fmt: r => Utils.formatMinutes(r.triage_to_doctor_min, true),   filterable: false, sortable: true  },
+    { key: 'doctor_to_disposal_min', label: 'Dr→Disposal',    fmt: r => Utils.formatMinutes(r.doctor_to_disposal_min, true), filterable: false, sortable: true  },
+    { key: 'disposal_to_exit_min',   label: 'Disp→Exit',      fmt: r => Utils.formatMinutes(r.disposal_to_exit_min, true),   filterable: false, sortable: true  },
+    { key: 'total_los_min',          label: 'Total LOS',      fmt: r => Utils.formatMinutes(r.total_los_min, true),          filterable: false, sortable: true  },
+    { key: 'access_block_4hr',       label: 'Access Blk',     fmt: r => r.access_block_4hr
         ? '<span class="badge badge-block">BLOCKED</span>'
-        : '<span class="badge badge-ok">OK</span>',                                                          filterable: false, sortable: true },
+        : '<span class="badge badge-ok">OK</span>',                                                          filterable: true,  sortable: false },
     { key: 'upload_year',            label: 'Month',          fmt: r => r.upload_month && r.upload_year
         ? `${['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][r.upload_month]} ${r.upload_year}`
-        : '—',                                                                                               filterable: false, sortable: true },
+        : '—',                                                                                               filterable: false, sortable: true  },
   ];
 
   // ── Apply column filters ────────────────────────────────
   function applyColFilters(data) {
     return data.filter(r => {
       for (const [key, vals] of Object.entries(colFilters)) {
-        if (vals && vals.size > 0 && !vals.has(r[key])) return false;
+        if (!vals || vals.size === 0) continue;
+        // access_block_4hr is boolean in data but stored as 'true'/'false' string in filter
+        const rVal = key === 'access_block_4hr'
+          ? String(r[key])
+          : r[key];
+        if (!vals.has(rVal)) return false;
       }
       return true;
     });
@@ -135,23 +140,27 @@ const Table = (() => {
       if (!dropdown) return;
 
       const current = colFilters[key] || new Set();
+      // For sex and access_block, use fixed option lists
+      const fixedOpts = { sex: ['M','F'], access_block_4hr: ['true','false'] };
+      const displayVals = fixedOpts[key] || vals;
+      const labelFor = (k, v) => {
+        if (k === 'disposal')         return Utils.shortDiscipline(v);
+        if (k === 'access_block_4hr') return v === 'true' ? 'BLOCKED' : 'OK';
+        if (k === 'sex')              return v === 'M' ? 'Male' : v === 'F' ? 'Female' : v;
+        return v;
+      };
+      const showSearch = key !== 'sex' && key !== 'access_block_4hr';
+
       dropdown.innerHTML = `
         <div class="col-filter-header">
-          <span style="font-size:0.7rem;font-family:var(--font-mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Filter ${key.replace('_category','').replace('_',' ')}</span>
+          <span style="font-size:0.7rem;font-family:var(--font-mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Filter ${key.replace('_category','').replace('_4hr','').replace(/_/g,' ')}</span>
           <button class="btn btn-ghost" style="font-size:0.68rem;padding:0.15rem 0.4rem" onclick="Table.clearColFilter('${key}')">Clear</button>
         </div>
-        <div class="col-filter-search">
-          <input type="search" placeholder="Search..." style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.75rem;padding:0.3rem 0.5rem;font-family:var(--font-mono)"
-            oninput="Table.filterColOptions(this, '${key}')">
-        </div>
+        ${showSearch ? `<div class="col-filter-search"><input type="search" placeholder="Search..." style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.75rem;padding:0.3rem 0.5rem;font-family:var(--font-mono)" oninput="Table.filterColOptions(this, '${key}')"></div>` : ''}
         <div class="col-filter-options">
-          ${vals.map(v => {
-            const label = key === 'disposal' ? Utils.shortDiscipline(v) : v;
-            return `<label class="col-filter-option ${current.has(v)?'checked':''}">
-              <input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${current.has(v)?'checked':''}
-                onchange="Table.toggleColFilter('${key}', this.value, this.checked)">
-              <span>${label}</span>
-            </label>`;
+          ${displayVals.map(v => {
+            const lbl = labelFor(key, String(v));
+            return `<label class="col-filter-option ${current.has(String(v))?'checked':''}"><input type="checkbox" value="${String(v).replace(/"/g,'&quot;')}" ${current.has(String(v))?'checked':''} onchange="Table.toggleColFilter('${key}', this.value, this.checked)"><span>${lbl}</span></label>`;
           }).join('')}
         </div>`;
     });

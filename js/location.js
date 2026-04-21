@@ -179,7 +179,9 @@ const Location = (() => {
             titleFont:{family:'DM Mono',size:11}, bodyFont:{family:'DM Mono',size:11}, padding:10,
             callbacks: { label: ctx => {
               const e = entries[ctx.dataIndex];
-              return [`Median: ${ctx.raw}h boarding`, `n = ${e.n} patients`];
+              const statLabels = {median:'Median',mean:'Mean',min:'Minimum',max:'Maximum'};
+              const sLabel = statLabels[stat] || 'Value';
+              return [`${sLabel}: ${ctx.raw}h boarding`, `n = ${e.n} patients`];
             }}
           }
         },

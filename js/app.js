@@ -78,6 +78,7 @@ const App = (() => {
       if (typeof TabFilters !== 'undefined') TabFilters.populate(allData);
       filteredData  = allData; // Tab filters applied per-tab via TabFilters
       window.__hectisFiltered = filteredData;
+      window.__hectisAllData  = allData; // Expose for Report button
 
       // Update Compare tab with fresh data
       if (typeof Compare !== 'undefined') Compare.setData(allData);
