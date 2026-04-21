@@ -132,7 +132,7 @@ const App = (() => {
       case 'time-patterns':     renderTimePatterns(d);  break;
       case 'triage-compliance': if (typeof Triage   !== 'undefined') Triage.render(d);   break;
       case 'trauma':            if (typeof Trauma   !== 'undefined') Trauma.render(d, TabFilters.getStat('trauma'));   break;
-      case 'locations':         if (typeof Location !== 'undefined') Location.render(d); break;
+      case 'locations':         if (typeof Location !== 'undefined') Location.render(d, TabFilters.getStat('locations')); break;
       case 'data-table':        Table.render(filteredData); break; // data-table uses its own column filters
     }
     dirtyTabs.delete(tab);
@@ -361,8 +361,10 @@ const App = (() => {
         const panel = document.getElementById(`tab-${target}`);
         if (panel) panel.classList.add('active');
         activeTab = target;
-        // Render this tab now if it was dirtied while another tab was active
-        if (dirtyTabs && dirtyTabs.has(activeTab)) {
+        // For data-table, always re-render on switch to ensure fresh data
+        if (activeTab === 'data-table') {
+          Table.render(filteredData);
+        } else if (dirtyTabs && dirtyTabs.has(activeTab)) {
           renderActiveTab();
         }
       });

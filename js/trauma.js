@@ -181,10 +181,10 @@ const Trauma = (() => {
     const metrics = (rows) => {
       const vals = rows.map(r => r.disposal_to_exit_min);
       return {
-      median: Utils.r0(Utils.toHours(calcStat(vals, stat))),
-      p75:    Utils.r0(Utils.toHours(Utils.percentile(vals, 75))),
-      p90:    Utils.r0(Utils.toHours(Utils.percentile(rows.map(r => r.disposal_to_exit_min), 90))),
-    };
+        median: Utils.r0(Utils.toHours(calcStat(vals, stat))),
+        p75:    Utils.r0(Utils.toHours(Utils.percentile(vals, 75))),
+        p90:    Utils.r0(Utils.toHours(Utils.percentile(vals, 90))),
+      };
     };
 
     const tm = metrics(traumaRows);

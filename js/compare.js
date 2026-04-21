@@ -42,6 +42,7 @@ const Compare = (() => {
       disposals: [],
       triage:    null,
       traumas:   [],
+      locations: [],
     };
     periods.push(p);
     _renderPeriod(p);
@@ -78,9 +79,10 @@ const Compare = (() => {
         const d = new Date(r.arrival_time);
         if (isNaN(d) || d > new Date(p.dateTo + 'T23:59:59')) return false;
       }
-      if (p.disposals.length && !p.disposals.includes(r.disposal)) return false;
-      if (p.triage && r.triage_category !== p.triage) return false;
-      if (p.traumas.length && !p.traumas.includes(r.trauma)) return false;
+      if (p.disposals.length  && !p.disposals.includes(r.disposal))  return false;
+      if (p.triage             && r.triage_category !== p.triage)    return false;
+      if (p.traumas.length     && !p.traumas.includes(r.trauma))     return false;
+      if (p.locations.length   && !p.locations.includes(r.location)) return false;
       return true;
     });
   }
@@ -340,6 +342,11 @@ const Compare = (() => {
     const disposals = Utils.unique(data.map(r => r.disposal).filter(Boolean));
     const triages   = ['Red','Orange','Yellow','Green'];
     const traumas   = Utils.unique(data.map(r => r.trauma).filter(v => v && _isValidTrauma(v)));
+    const OUTCOME_LOCS = new Set(['Home','Discharged Home by Discipline','Discharged Home',
+      'Transferred Out','Transferred Out by Discipline','Bereavement Room',
+      'Mortuary','Mortuary Contract','Mortuary Forensic(Salt River)','OPD','Clinical Forensics Unit']);
+    const locRaw  = Utils.unique(data.map(r => r.location).filter(v => v && _isValidLocation(v)));
+    const locations = [...locRaw.filter(v => !OUTCOME_LOCS.has(v)).sort(), ...locRaw.filter(v => OUTCOME_LOCS.has(v)).sort()];
 
     const card = document.createElement('div');
     card.className = 'compare-period-card';
@@ -353,6 +360,11 @@ const Compare = (() => {
     const traumaOpts = traumas.map(t =>
       `<label class="multiselect-item ${p.traumas.includes(t)?'checked':''}">
         <input type="checkbox" value="${t}" ${p.traumas.includes(t)?'checked':''}> <span>${t}</span>
+      </label>`).join('');
+
+    const locationOpts = locations.map(l =>
+      `<label class="multiselect-item ${p.locations.includes(l)?'checked':''}">
+        <input type="checkbox" value="${l.replace(/"/g,'&quot;')}" ${p.locations.includes(l)?'checked':''}> <span>${l}</span>
       </label>`).join('');
 
     const triageOpts = triages.map(t =>
@@ -414,11 +426,26 @@ const Compare = (() => {
             </div>
           </div>
         </div>
+        <div class="filter-group" style="position:relative">
+          <label class="filter-label">Location</label>
+          <div class="multiselect-wrap" id="cploc-wrap-${p.id}">
+            <button class="multiselect-trigger filter-select" id="cploc-btn-${p.id}" data-placeholder="All Locations">
+              ${p.locations.length === 0 ? 'All Locations' : p.locations.length === locations.length ? 'All selected' : p.locations.length + ' selected'}
+            </button>
+            <div class="multiselect-list">
+              <label class="multiselect-item multiselect-select-all">
+                <input type="checkbox" class="cp-select-all-loc" ${p.locations.length === locations.length || p.locations.length === 0 ? 'checked' : ''}> <span style="font-weight:600">Select all</span>
+              </label>
+              <div style="height:1px;background:var(--border);margin:0.25rem 0"></div>
+              ${locationOpts}
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
     container.appendChild(card);
-    _bindPeriodEvents(card, p, disposals, traumas);
+    _bindPeriodEvents(card, p, disposals, traumas, locations);
   }
 
   function _isValidTrauma(v) {
@@ -429,7 +456,7 @@ const Compare = (() => {
   }
 
   // ── Bind events for a period card ────────────────────────
-  function _bindPeriodEvents(card, p, disposals, traumas) {
+  function _bindPeriodEvents(card, p, disposals, traumas, locations) {
     // Date inputs
     card.querySelector('.cp-from')?.addEventListener('change', e => { p.dateFrom = e.target.value || null; _renderChart(); });
     card.querySelector('.cp-to')?.addEventListener('change',   e => { p.dateTo   = e.target.value || null; _renderChart(); });
@@ -441,7 +468,9 @@ const Compare = (() => {
     _bindMultiSelect(card, '.cp-select-all-disp', 'cpd-btn-' + p.id, p.disposals, disposals, 'All Disposals', v => Utils.shortDiscipline(v), 'input[type=checkbox]:not(.cp-select-all-disp):not(.cp-select-all-trauma)');
 
     // Trauma multi-select
-    _bindMultiSelect(card, '.cp-select-all-trauma', 'cptr-btn-' + p.id, p.traumas, traumas, 'All Trauma', v => v, 'input[type=checkbox]:not(.cp-select-all-disp):not(.cp-select-all-trauma)');
+    _bindMultiSelect(card, '.cp-select-all-trauma', 'cptr-btn-' + p.id, p.traumas, traumas, 'All Trauma', v => v, 'input[type=checkbox]:not(.cp-select-all-disp):not(.cp-select-all-trauma):not(.cp-select-all-loc)');
+    // Location multi-select
+    _bindMultiSelect(card, '.cp-select-all-loc', 'cploc-btn-' + p.id, p.locations, locations, 'All Locations', v => v, 'input[type=checkbox]:not(.cp-select-all-disp):not(.cp-select-all-trauma):not(.cp-select-all-loc)');
   }
 
   function _bindMultiSelect(card, selectAllSel, triggerId, arr, allValues, placeholder, labelFn) {

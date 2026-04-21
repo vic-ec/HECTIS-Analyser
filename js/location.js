@@ -5,6 +5,17 @@
 
 const Location = (() => {
 
+  // ── Stat calculation ─────────────────────────────────────
+  function calcStat(vals, stat) {
+    if (!vals || !vals.length) return null;
+    switch(stat) {
+      case 'mean': return vals.reduce((a,b)=>a+b,0)/vals.length;
+      case 'min':  return Math.min(...vals);
+      case 'max':  return Math.max(...vals);
+      default:     return Utils.median(vals);
+    }
+  }
+
   // Locations that represent actual ward destinations (not outcomes)
   const OUTCOME_LOCS = new Set([
     'Discharged Home by Discipline', 'Discharged Home', 'Home',
@@ -19,7 +30,7 @@ const Location = (() => {
   }
 
   // ── Render ───────────────────────────────────────────────
-  function render(data) {
+  function render(data, stat = 'median') {
     // Discipline filter now from tab filter bar via disposal filter
     // Remove reference to standalone loc-filter-discipline dropdown
     const wardData = data.filter(r =>
@@ -35,8 +46,8 @@ const Location = (() => {
     }
 
     renderKPIs(wardData);
-    renderWardTable(wardData);
-    renderWardChart(wardData);
+    renderWardTable(wardData, stat);
+    renderWardChart(wardData, stat);
     renderDisciplineByWard(wardData);
     populateWardFilter(wardData);
   }
@@ -68,7 +79,7 @@ const Location = (() => {
   }
 
   // ── Ward summary table ───────────────────────────────────
-  function renderWardTable(data) {
+  function renderWardTable(data, stat = 'median') {
     const el = document.getElementById('location-table');
     if (!el) return;
 
@@ -86,7 +97,7 @@ const Location = (() => {
       return {
         loc,
         n:         rows.length,
-        median:    Utils.r0(Utils.median(vals)),
+        median:    Utils.r0(calcStat(vals, stat)),
         p75:       Utils.r0(Utils.percentile(vals, 75)),
         p90:       Utils.r0(Utils.percentile(vals, 90)),
         blockRate: Utils.r1((blocked / rows.length) * 100),
@@ -120,24 +131,24 @@ const Location = (() => {
   }
 
   // ── Ward median boarding bar chart ───────────────────────
-  function renderWardChart(data) {
+  function renderWardChart(data, stat = 'median') {
     const canvas = document.getElementById('chart-location-ward');
     if (!canvas) return;
     const existing = Chart.getChart(canvas); if (existing) existing.destroy();
 
-    const filterVal = ''; // Discipline filter handled by tab filter bar
-    const filtered  = filterVal ? data.filter(r => r.disposal === filterVal) : data;
-    const grouped   = Utils.groupBy(filtered, 'location');
+    const grouped = Utils.groupBy(data, 'location');
 
     const entries = Object.entries(grouped)
-      .filter(([, rows]) => rows.length >= 5)
-      .map(([loc, rows]) => ({
-        loc,
-        median: Utils.r0(Utils.toHours(Utils.median(rows.map(r => r.disposal_to_exit_min)))),
-        n: rows.length,
-      }))
-      .sort((a, b) => b.median - a.median)
-      .slice(0, 15);
+      .filter(([, rows]) => rows.length >= 3)
+      .map(([loc, rows]) => {
+        const vals = rows.map(r => r.disposal_to_exit_min).filter(v => v !== null && v >= 0);
+        return {
+          loc,
+          median: Utils.r0(Utils.toHours(calcStat(vals, stat))),
+          n: rows.length,
+        };
+      })
+      .sort((a, b) => b.median - a.median);  // all wards, no slice
 
     new Chart(canvas, {
       type: 'bar',
