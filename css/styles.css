@@ -515,14 +515,18 @@ body {
 /* ── Data Table ────────────────────────────────────────────── */
 .table-wrap {
   overflow-x: auto;
+  overflow-y: visible;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
+  width: 100%;
 }
 
 table {
   width: 100%;
+  min-width: 1200px; /* force horizontal scroll rather than squishing */
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  table-layout: auto;
 }
 
 thead {
