@@ -24,8 +24,12 @@ const Compare = (() => {
   }
 
   // ── Update data reference ────────────────────────────────
-  function setData(data) {
-    allDataRef = data;
+  function setData(data) { allDataRef = data; }
+
+  // Resolve allDataRef whether it's a getter function or array
+  function _getData() {
+    if (typeof allDataRef === 'function') return allDataRef() || [];
+    return allDataRef || [];
   }
 
   // ── Add period ───────────────────────────────────────────
@@ -91,7 +95,7 @@ const Compare = (() => {
 
   // ── Get all period datasets ──────────────────────────────
   function getDatasets() {
-    if (!allDataRef) return [];
+    const __d = _getData(); if (!__d || !__d.length) return [];
     return periods
       .filter(p => p.dateFrom && p.dateTo)
       .map(p => ({
@@ -99,7 +103,7 @@ const Compare = (() => {
         color:   p.color,
         dateFrom: p.dateFrom,
         dateTo:   p.dateTo,
-        data:    _applyPeriod(allDataRef, p),
+        data:    _applyPeriod(_d, p),
         period:  p,
       }));
   }
@@ -339,16 +343,7 @@ const Compare = (() => {
     const minD = window.__hectisMinDate || '';
     const maxD = window.__hectisMaxDate || '';
 
-    // Get available options from data - wait if not loaded yet
-    const data = (allDataRef && allDataRef.length > 0) ? allDataRef : [];
-    if (data.length === 0) {
-      // Data not loaded yet - retry after data loads
-      Utils.toast('Data still loading — please try again shortly', 'info', 2000);
-      // Remove the period we just added since we can't render it
-      periods = periods.filter(pp => pp.id !== p.id);
-      _updateAddButton();
-      return;
-    }
+    const data = _getData();
     const disposals = Utils.unique(data.map(r => r.disposal).filter(Boolean));
     const triages   = ['Red','Orange','Yellow','Green'];
     const traumas   = Utils.unique(data.map(r => r.trauma).filter(v => v && _isValidTrauma(v)));

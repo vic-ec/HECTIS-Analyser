@@ -33,15 +33,17 @@ const Location = (() => {
   function render(data, stat = 'median') {
     // Discipline filter now from tab filter bar via disposal filter
     // Remove reference to standalone loc-filter-discipline dropdown
+    // Use all data passed in - tab filter bar handles disposal/location filtering
+    // Only filter out records with no location or no boarding time
     const wardData = data.filter(r =>
-      r.location && isWard(r.location) &&
-      r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0 &&
-      Utils.isReferral(r.disposal)
+      r.location &&
+      r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0
     );
 
     if (!wardData.length) {
       const el = document.getElementById('location-content');
-      if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">⊘</div><p>No ward destination data available</p></div>';
+      if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">⊘</div><p>No data available for the selected filters</p></div>';
+      renderKPIs([]);
       return;
     }
 
