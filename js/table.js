@@ -141,7 +141,7 @@ const Table = (() => {
       const th = document.querySelector(`#data-table th[data-key="${key}"]`);
       if (th) {
         const hasFilter = colFilters[key] && colFilters[key].size > 0;
-        th.classList.toggle('col-filter-active', hasFilter);
+        th.classList.toggle('col-filter-on', hasFilter);
       }
     });
   }
@@ -247,9 +247,27 @@ const Table = (() => {
     const dropdown = document.getElementById(`col-filter-dropdown-${key}`);
     if (!dropdown) return;
     const isOpen = dropdown.classList.contains('open');
-    // Close all
     document.querySelectorAll('.col-filter-dropdown.open').forEach(d => d.classList.remove('open'));
-    if (!isOpen) dropdown.classList.add('open');
+    if (!isOpen) {
+      // Position dropdown relative to the button using fixed coords
+      const btn = dropdown.previousElementSibling; // col-filter-btn
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.top  = (rect.bottom + 4) + 'px';
+        dropdown.style.left = rect.left + 'px';
+        // Keep within viewport
+        setTimeout(() => {
+          const dr = dropdown.getBoundingClientRect();
+          if (dr.right > window.innerWidth - 8) {
+            dropdown.style.left = (window.innerWidth - dr.width - 8) + 'px';
+          }
+          if (dr.bottom > window.innerHeight - 8) {
+            dropdown.style.top = (rect.top - dr.height - 4) + 'px';
+          }
+        }, 0);
+      }
+      dropdown.classList.add('open');
+    }
   }
 
   // ── Sort ────────────────────────────────────────────────

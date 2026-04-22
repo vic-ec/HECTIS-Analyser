@@ -152,6 +152,17 @@ const App = (() => {
     Table.render(filteredData);
   }
 
+  // ── Stat helper for overview ─────────────────────────────
+  function _calcStat(vals, stat) {
+    if (!vals || !vals.length) return null;
+    switch(stat) {
+      case 'mean': return vals.reduce((a,b)=>a+b,0)/vals.length;
+      case 'min':  return Math.min(...vals);
+      case 'max':  return Math.max(...vals);
+      default:     return Utils.median(vals);
+    }
+  }
+
   // ── Overview ─────────────────────────────────────────────
   function renderOverview(tabFilteredData) {
     const data = tabFilteredData || filteredData;
@@ -165,31 +176,32 @@ const App = (() => {
     }
 
     // Helper to get stats from a dataset
+    const stat = TabFilters.getStat('overview');
+    const statLabel = {median:'Median',mean:'Mean',min:'Minimum',max:'Maximum'}[stat] || 'Median';
+
     function stats(d) {
       const losVals   = d.map(r => r.total_los_min).filter(v => v !== null && v >= 0);
       const blockable = d.filter(r => r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
       const blocked   = blockable.filter(r => r.access_block_4hr);
       const blockRate = blockable.length ? Utils.r1((blocked.length / blockable.length) * 100) : null;
-      // Worst discipline: only referral disposals (not discharges/absconded/deceased)
       const referrals = d.filter(r => r.disposal && Utils.isReferral(r.disposal) &&
                                       r.disposal_to_exit_min !== null && r.disposal_to_exit_min >= 0);
       const grouped   = Utils.groupBy(referrals, 'disposal');
       let worstD = null, worstM = -1;
       Object.entries(grouped).forEach(([disc,rows]) => {
-        const med = Utils.median(rows.map(r=>r.disposal_to_exit_min));
-        if (med > worstM) { worstM = med; worstD = disc; }
+        const v = _calcStat(rows.map(r=>r.disposal_to_exit_min), stat);
+        if (v > worstM) { worstM = v; worstD = disc; }
       });
       return {
         n: d.length,
-        medLos: Utils.r1(Utils.toHours(Utils.median(losVals))),
+        medLos: Utils.r1(Utils.toHours(_calcStat(losVals, stat))),
         blockRate,
         worstD, worstM,
         segs: {
-          att: Utils.r0(Utils.median(d.map(r=>r.arrival_to_triage_min).filter(v=>v!==null&&v>=0))),
-          ttd: Utils.r0(Utils.median(d.map(r=>r.triage_to_doctor_min).filter(v=>v!==null&&v>=0))),
-          dtd: Utils.r0(Utils.median(d.map(r=>r.doctor_to_disposal_min).filter(v=>v!==null&&v>=0))),
-          // Disposal→Exit: referral patients only (meaningful boarding time)
-          dte: Utils.r0(Utils.median(referrals.map(r=>r.disposal_to_exit_min))),
+          att: Utils.r0(_calcStat(d.map(r=>r.arrival_to_triage_min).filter(v=>v!==null&&v>=0), stat)),
+          ttd: Utils.r0(_calcStat(d.map(r=>r.triage_to_doctor_min).filter(v=>v!==null&&v>=0), stat)),
+          dtd: Utils.r0(_calcStat(d.map(r=>r.doctor_to_disposal_min).filter(v=>v!==null&&v>=0), stat)),
+          dte: Utils.r0(_calcStat(referrals.map(r=>r.disposal_to_exit_min), stat)),
         }
       };
     }
@@ -202,10 +214,24 @@ const App = (() => {
       sA.n.toLocaleString(), comparing ? sB.n.toLocaleString() : null,
       '', comparing ? _delta(sA.n, sB.n, true) : null);
 
+    // Update KPI card labels to reflect selected stat
+    const losCard = document.querySelector('#kpi-los .kpi-label');
+    if (losCard) losCard.textContent = statLabel + ' Total LOS';
+    const segLabels = {
+      'kpi-seg-att': 'Arrival → Triage',
+      'kpi-seg-ttd': 'Triage → Doctor',
+      'kpi-seg-dtd': 'Doctor → Disposal',
+      'kpi-seg-dte': 'Disposal → Exit',
+    };
+    Object.entries(segLabels).forEach(([id, base]) => {
+      const el = document.querySelector(`#${id} .kpi-label`);
+      if (el) el.textContent = base;  // keep short; stat shown in unit
+    });
+
     renderKPIWithDelta('kpi-los',
       sA.medLos !== null ? sA.medLos + 'h' : '—',
       sB ? (sB.medLos !== null ? sB.medLos + 'h' : '—') : null,
-      'all patients',
+      statLabel.toLowerCase() + ' · all patients',
       sB ? _delta(sA.medLos, sB.medLos, false) : null,
       sA.medLos > 12 ? 'alert' : sA.medLos > 6 ? 'warn' : '');
 
@@ -232,7 +258,7 @@ const App = (() => {
       renderKPIWithDelta(s.id,
         Utils.formatMinutes(vA, true),
         vB !== null && vB !== undefined ? Utils.formatMinutes(vB, true) : null,
-        'median',
+        statLabel.toLowerCase(),
         sB ? _delta(vA, vB, false) : null);
     });
 
