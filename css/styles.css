@@ -551,8 +551,7 @@ th {
 }
 
 th:hover { color: var(--text); }
-th.sort-asc::after  { content: ' ↑'; color: var(--accent); }
-th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+
 
 td {
   padding: 0.6rem 1rem;
@@ -1096,21 +1095,30 @@ input[type="date"]:in-range {
 }
 .col-filter-btn:hover { color: var(--accent); }
 
-th.col-filter-active .col-filter-btn { color: var(--accent); }
-th.col-filter-active { background: var(--accent-soft) !important; }
+/* Active filter: only the ▾ button changes colour - no row background */
+th.col-filter-on .col-filter-btn {
+  color: var(--accent);
+  font-weight: 700;
+}
+th.col-filter-on .col-filter-btn::after {
+  content: '●';
+  font-size: 0.4rem;
+  vertical-align: super;
+  margin-left: 1px;
+  color: var(--accent);
+}
 
 .col-filter-dropdown {
   display: none;
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  z-index: 200;
+  position: fixed; /* fixed escapes overflow:auto containers */
+  z-index: 9999;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   min-width: 200px;
   max-width: 280px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  max-height: 320px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   padding: 0.5rem;
 }
 .col-filter-dropdown.open { display: block; }
@@ -1202,4 +1210,37 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
+}
+
+/* ── Data Table floating scroll ─────────────────────────── */
+#table-scroll-track {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  z-index: 20;
+  /* synced by JS */
+}
+
+#table-scroll-inner {
+  height: 1px;
+  /* width set by JS to match table width */
+}
+
+/* Style the scrollbar itself */
+#table-scroll-track::-webkit-scrollbar { height: 8px; }
+#table-scroll-track::-webkit-scrollbar-track { background: var(--surface-2); }
+#table-scroll-track::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+#table-scroll-track::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* Date pickers in table toolbar align bottom with buttons */
+#tab-data-table .filter-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
