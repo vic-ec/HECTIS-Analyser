@@ -97,7 +97,39 @@
         <div class="card"><div class="card-title">Disposal → Exit by Discipline (Median / P75 / P90)</div><div class="chart-wrap chart-tall"><canvas id="chart-ab-discipline"></canvas></div></div>
         <div class="card"><div class="card-title">Access Block Rate by Discipline (% > 4 hrs)</div><div class="chart-wrap chart-tall"><canvas id="chart-ab-rate"></canvas></div></div>
       </div>
-      <div class="card"><div class="card-title">Discipline Summary Table</div><div id="discipline-summary"><div class="empty-state"><div class="empty-icon">⊘</div><p>No data loaded yet</p></div></div></div>
+      <div class="card" style="margin-bottom:1rem"><div class="card-title">Discipline Summary Table</div><div id="discipline-summary"><div class="empty-state"><div class="empty-icon">⊘</div><p>No data loaded yet</p></div></div></div>
+
+      <!-- Patient Flow Section -->
+      <div class="section-header" style="margin-bottom:0.5rem;margin-top:1.5rem">
+        <div class="section-title" style="font-size:1.1rem">Admission Rate</div>
+        <div class="section-desc">Monthly patient arrivals by age group</div>
+      </div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="chart-wrap chart-wide"><canvas id="chart-pf-admissions"></canvas></div>
+      </div>
+
+      <div class="section-header" style="margin-bottom:0.5rem">
+        <div class="section-title" style="font-size:1.1rem">Exit Patterns</div>
+        <div class="section-desc">Monthly exit volumes by type and hourly distribution</div>
+      </div>
+      <div class="grid-2" style="margin-bottom:1rem">
+        <div class="card">
+          <div class="card-title">Exit Rate by Month</div>
+          <div class="chart-wrap"><canvas id="chart-pf-exits-trend"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Exit Time by Hour of Day</div>
+          <div class="chart-wrap"><canvas id="chart-pf-exits-hour"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-bottom:0.5rem">
+        <div class="section-title" style="font-size:1.1rem">Referral Boarding vs EC Deaths</div>
+        <div class="section-desc">Side-by-side monthly comparison — referral boarding time vs patients who died in EC</div>
+      </div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="chart-wrap chart-wide"><canvas id="chart-pf-access-deaths"></canvas></div>
+      </div>
     </div>
 
     <!-- LOCATIONS TAB -->
@@ -371,6 +403,7 @@
 <script src="js/trauma.js"></script>
 <script src="js/report.js"></script>
 <script src="js/location.js"></script>
+<script src="js/patientflow.js"></script>
 <script src="js/tabfilters.js"></script>
 <script src="js/compare.js"></script>
 <script src="js/app.js"></script>
