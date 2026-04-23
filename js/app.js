@@ -129,7 +129,7 @@ const App = (() => {
     const d = tabData(tab);
     switch (tab) {
       case 'overview':          renderOverview(d);      break;
-      case 'access-block':      renderAccessBlock(d);   break;
+      case 'access-block':      renderAccessBlock(d);   if (typeof PatientFlow !== 'undefined') PatientFlow.render(d, TabFilters.getStat('access-block')); break;
       case 'time-patterns':     renderTimePatterns(d);  break;
       case 'triage-compliance': if (typeof Triage   !== 'undefined') Triage.render(d);   break;
       case 'trauma':            if (typeof Trauma   !== 'undefined') Trauma.render(d, TabFilters.getStat('trauma'));   break;
@@ -228,12 +228,14 @@ const App = (() => {
       if (el) el.textContent = base;  // keep short; stat shown in unit
     });
 
+    // LOS card: use alert colour when value is high (regardless of stat)
+    const losColour = sA.medLos !== null && sA.medLos > 12 ? 'alert' : sA.medLos > 6 ? 'warn' : '';
     renderKPIWithDelta('kpi-los',
       sA.medLos !== null ? sA.medLos + 'h' : '—',
       sB ? (sB.medLos !== null ? sB.medLos + 'h' : '—') : null,
       statLabel.toLowerCase() + ' · all patients',
       sB ? _delta(sA.medLos, sB.medLos, false) : null,
-      sA.medLos > 12 ? 'alert' : sA.medLos > 6 ? 'warn' : '');
+      losColour);
 
     renderKPIWithDelta('kpi-block-rate',
       sA.blockRate !== null ? sA.blockRate + '%' : '—',
@@ -243,7 +245,7 @@ const App = (() => {
       sA.blockRate > 70 ? 'alert' : sA.blockRate > 40 ? 'warn' : 'good');
 
     // Render Highest Bed Pressure with prominent red median time
-    _renderWorstKPI('kpi-worst', sA.worstD, sA.worstM);
+    _renderWorstKPI('kpi-worst', sA.worstD, sA.worstM, statLabel);
 
     // Segment KPIs
     const segKeys = [
@@ -270,15 +272,16 @@ const App = (() => {
   }
 
   // ── Worst Discipline KPI renderer ───────────────────────
-  function _renderWorstKPI(id, discipline, medianMin) {
+  function _renderWorstKPI(id, discipline, statMin, statLabelStr) {
     const card = document.getElementById(id);
     if (!card) return;
     const valEl  = card.querySelector('.kpi-value');
     const unitEl = card.querySelector('.kpi-unit');
     if (valEl)  valEl.textContent = discipline ? Utils.shortDiscipline(discipline) : '—';
+    const lbl = (statLabelStr || 'median').toLowerCase();
     if (unitEl) {
-      if (medianMin > 0) {
-        unitEl.innerHTML = `median <span style="color:var(--red);font-weight:600">${Utils.formatMinutes(medianMin, true)}</span> boarding`;
+      if (statMin > 0) {
+        unitEl.innerHTML = `${lbl} <span style="color:var(--red);font-weight:600">${Utils.formatMinutes(statMin, true)}</span> boarding`;
       } else {
         unitEl.textContent = '';
       }

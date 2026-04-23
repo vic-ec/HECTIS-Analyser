@@ -125,10 +125,11 @@ const TabFilters = (() => {
     const maxD = window.__hectisMaxDate || '';
     const fromVal = s.dateFrom || minD;
     const toVal   = s.dateTo   || maxD;
-    const reportBtn = tab === 'overview'
-      ? `<div class="filter-group" style="align-self:flex-end">
-           <button class="btn btn-secondary" id="btn-generate-report" style="margin-bottom:0.1rem">🖨 Report</button>
-         </div>` : '';
+    // All tabs get a Report button (each generates report for that tab's filtered data)
+    const reportBtnId = `btn-report-${tab}`;
+    const reportBtn = `<div class="filter-group" style="align-self:flex-end">
+           <button class="btn btn-secondary" id="${reportBtnId}" style="margin-bottom:0.1rem" title="Print report for this tab">🖨 Report</button>
+         </div>`;
 
     container.innerHTML = `
       <div class="tab-filter-bar">
@@ -166,8 +167,8 @@ const TabFilters = (() => {
 
     _bindTabFilterEvents(tab, container, s);
 
-    // Wire Report button if present
-    const reportBtn2 = container.querySelector('#btn-generate-report');
+    // Wire Report button for this tab
+    const reportBtn2 = container.querySelector(`#btn-report-${tab}`);
     if (reportBtn2) {
       reportBtn2.addEventListener('click', () => {
         // Use the tab's filtered data (Overview tab = 'overview')
